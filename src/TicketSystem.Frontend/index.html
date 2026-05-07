@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketSystem</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Existing CSS for Login/Profile */
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #ec4899;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --surface: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --error: #ef4444;
+            --success: #22c55e;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* --- Login Container Styles --- */
+        .login-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { width: 100%; max-width: 450px; perspective: 1000px; }
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .header { text-align: center; margin-bottom: 32px; }
+        .header h1 {
+            font-size: 2rem; font-weight: 700; margin-bottom: 8px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header p { color: var(--text-muted); font-size: 0.95rem; }
+        .tabs { display: flex; background: rgba(15, 23, 42, 0.5); padding: 4px; border-radius: 12px; margin-bottom: 24px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 0.9rem; transition: all 0.3s ease; color: var(--text-muted); }
+        .tab.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+        .form-group input { width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 12px; color: white; font-size: 1rem; transition: all 0.3s ease; }
+        .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        button.primary-btn { width: 100%; padding: 14px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; margin-top: 12px; }
+        button.primary-btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5); }
+        button.primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .error-message { color: var(--error); font-size: 0.85rem; margin-top: 12px; text-align: center; display: none; }
+        .profile-screen { display: none; text-align: center; }
+        .avatar { width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), #c084fc); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4); }
+        .profile-info { background: rgba(15, 23, 42, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px; text-align: left; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 8px; }
+        .info-row:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+        .info-label { color: var(--text-muted); font-size: 0.85rem; }
+        .info-value { font-weight: 600; font-size: 0.9rem; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .badge-user { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge-admin { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .logout-btn { width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); margin-top: 0; }
+        .logout-btn:hover { background: rgba(255, 255, 255, 0.05); color: white; border-color: white; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease forwards; }
+        .loading-spinner { width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s linear infinite; display: none; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .settings-toggle { position: absolute; top: 20px; right: 20px; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: color 0.3s; z-index: 100; }
+        .settings-toggle:hover { color: white; }
+        .settings-panel { display: none; margin-bottom: 24px; padding: 16px; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px dashed var(--glass-border); }
+        .settings-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+        /* --- Admin Dashboard Styles --- */
+        .admin-layout { display: none; height: 100vh; width: 100%; }
+        .sidebar { width: 280px; background: var(--surface); backdrop-filter: blur(20px); border-right: 1px solid var(--glass-border); padding: 30px 20px; display: flex; flex-direction: column; }
+        .admin-logo { font-size: 1.5rem; font-weight: 700; margin-bottom: 40px; background: linear-gradient(135deg, #818cf8, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; }
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .nav-item { padding: 12px 16px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); transform: translateX(5px); }
+        .nav-item.active { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.2)); color: var(--text); border: 1px solid rgba(99, 102, 241, 0.3); }
+        .sidebar-logout { margin-top: auto; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px 16px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-weight: 600; text-align: center; }
+        .sidebar-logout:hover { background: #ef4444; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .user-profile-header { display: flex; align-items: center; gap: 15px; }
+        .avatar-small { width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; background: var(--surface); padding: 25px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
+        .filter-group { display: flex; flex-direction: column; gap: 8px; }
+        .filter-group label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+        .filter-group input { padding: 12px; border-radius: 10px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); color: var(--text); outline: none; }
+        .filter-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .filter-group input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.6; transition: 0.3s; }
+        .filter-group input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+        .btn-group { display: flex; align-items: flex-end; gap: 10px; }
+        .btn { padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; flex: 1; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text); border: 1px solid var(--glass-border); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); }
+        .table-container { background: var(--surface); border-radius: 20px; border: 1px solid var(--glass-border); overflow: hidden; backdrop-filter: blur(10px); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: rgba(0, 0, 0, 0.2); padding: 18px 25px; font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--glass-border); }
+        td { padding: 18px 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: var(--text); font-size: 0.95rem; }
+        tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+        tbody tr:last-child td { border-bottom: none; }
+        .user-cell { display: flex; align-items: center; gap: 15px; }
+        .user-cell .avatar-list { width: 35px; height: 35px; border-radius: 50%; background: rgba(99, 102, 241, 0.2); color: #818cf8; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; }
+        .username-badge { background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; color: var(--text-muted); }
+        .empty-state { padding: 60px; text-align: center; color: var(--text-muted); }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
+        .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.1); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        .alert { padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: none; align-items: center; gap: 10px; font-weight: 500; }
+        .alert.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; display: flex; }
+
+        /* --- Ticket System Styles --- */
+        .tickets-section { margin-top: 30px; text-align: left; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--text); }
+        .ticket-list { display: flex; flex-direction: column; gap: 10px; }
+        .ticket-card { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.3s; }
+        .ticket-card:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-2px); border-color: var(--primary); }
+        .ticket-card .title { font-weight: 600; margin-bottom: 5px; }
+        .ticket-card .meta { font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 30px; width: 90%; max-width: 500px; position: relative; }
+        .close-modal { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 1.5rem; color: var(--text-muted); }
+        
+        .chat-container { display: flex; flex-direction: column; height: 400px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; border: 1px solid var(--glass-border); margin-top: 15px; overflow: hidden; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 15px; position: relative; font-size: 0.9rem; }
+        .message.sent { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+        .message.received { align-self: flex-start; background: rgba(255,255,255,0.1); color: var(--text); border-bottom-left-radius: 2px; }
+        .message .delete-msg { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
+        .message:hover .delete-msg { display: flex; }
+        .chat-input-area { display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); }
+        .chat-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 12px; color: white; }
+        .send-btn { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 8px 15px; cursor: pointer; }
+
+        .ticket-detail-view { display: none; flex-direction: column; height: 100%; }
+        .ticket-detail-view.active { display: flex; }
+        
+        .status-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
+        .status-open { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .status-solved { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    </style>
+</head>
+<body>
+    <div class="settings-toggle" onclick="toggleSettings()" title="API Settings">⚙️</div>
+
+    <!-- Login Flow Wrapper -->
+    <div class="login-wrapper" id="loginWrapper">
+        <div class="container">
+            <div class="card" id="mainCard">
+                <!-- Settings Panel -->
+                <div id="settingsPanel" class="settings-panel">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="apiUrlInput">API Base URL</label>
+                        <input type="text" id="apiUrlInput" value="http://localhost:5000" onchange="updateApiUrl(this.value)">
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Update this if your API runs on a different port.</p>
+                    </div>
+                </div>
+
+                <!-- Login Screen -->
+                <div id="loginScreen">
+                    <div class="header">
+                        <h1>TicketSystem</h1>
+                        <p id="headerSubtitle">Welcome back! Please login.</p>
+                    </div>
+
+                    <div class="tabs">
+                        <div class="tab active" id="userTab" onclick="switchTab('user')">User</div>
+                        <div class="tab" id="adminTab" onclick="switchTab('admin')">Admin</div>
+                    </div>
+
+                    <form id="authForm">
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" placeholder="John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" placeholder="johndoe123" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" placeholder="••••••••" required>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="primary-btn">
+                            <span id="btnText">Login / Register</span>
+                            <div class="loading-spinner" id="btnSpinner"></div>
+                        </button>
+                        <div class="error-message" id="errorMessage"></div>
+                    </form>
+                </div>
+
+                <!-- Profile Screen (For Users) -->
+                <div id="profileScreen" class="profile-screen">
+                    <div class="header">
+                        <div class="avatar" id="profileAvatar">U</div>
+                        <h1 id="profileName">User Name</h1>
+                        <p>Authentication Successful</p>
+                    </div>
+
+                    <div class="profile-info">
+                        <div class="info-row">
+                            <span class="info-label">Username</span>
+                            <span class="info-value" id="infoUsername">@username</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Role</span>
+                            <span id="infoRoleBadge" class="badge">User</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Joined</span>
+                            <span class="info-value" id="infoJoined">January 1, 2024</span>
+                        </div>
+                    </div>
+
+                    <div class="tickets-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Support Tickets</h2>
+                            <button class="btn btn-primary" onclick="openCreateTicketModal()" style="padding: 6px 12px; font-size: 0.8rem;">+ New</button>
+                        </div>
+                        <div id="userTicketList" class="ticket-list">
+                            <!-- User tickets will be loaded here -->
+                        </div>
+                    </div>
+
+                    <button class="logout-btn" onclick="logout()" style="margin-top: 24px;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Ticket Modal -->
+    <div id="createTicketModal" class="modal">
+        <div class="modal-content animate-fade-in">
+            <span class="close-modal" onclick="closeModal('createTicketModal')">&times;</span>
+            <h2 style="margin-bottom: 20px;">Create New Ticket</h2>
+            <div class="form-group">
+                <label>Ticket Title</label>
+                <input type="text" id="newTicketTitle" placeholder="Describe your issue...">
+            </div>
+            <button class="primary-btn" onclick="submitTicket()">Submit Ticket</button>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div id="ticketDetailModal" class="modal">
+        <div class="modal-content animate-fade-in" style="max-width: 600px;">
+            <span class="close-modal" onclick="closeModal('ticketDetailModal')">&times;</span>
+            <div class="section-header" style="margin-bottom: 5px;">
+                <h2 id="modalTicketTitle">Ticket Title</h2>
+                <span id="modalTicketStatus" class="status-tag status-open">Open</span>
+            </div>
+            <p id="modalTicketMeta" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">By User on Date</p>
+            
+            <div id="adminAssignSection" style="display: none; margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="assignTicketToMe()" style="width: 100%;">Assign This Ticket To Me</button>
+            </div>
+
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div class="chat-input-area" id="chatInputArea">
+                    <input type="text" id="messageInput" class="chat-input" placeholder="Type a message...">
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+            
+            <button id="solveTicketBtn" class="btn btn-secondary" onclick="solveTicket()" style="margin-top: 15px; width: 100%; display: none; background: rgba(34, 197, 94, 0.1); color: #4ade80;">Mark as Solved</button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Flow (For Admins) -->
+    <div class="admin-layout" id="adminLayout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="admin-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#818cf8" />
+                            <stop offset="100%" stop-color="#f472b6" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+                    <path d="M13 5v2"/>
+                    <path d="M13 17v2"/>
+                    <path d="M13 11v2"/>
+                </svg>
+                TicketSystem
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item active" id="navUsers" onclick="switchAdminTab('users')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Users Directory
+                </li>
+                <li class="nav-item" id="navTickets" onclick="switchAdminTab('tickets')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                    Support Tickets
+                </li>
+            </ul>
+
+            <button class="sidebar-logout" onclick="logout()">
+                Log Out
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="admin-header">
+                <div>
+                    <h1 style="font-size: 2rem; font-weight: 700;">Admin Dashboard</h1>
+                    <p style="color: var(--text-muted); margin-top: 5px;">Manage users and system settings</p>
+                </div>
+                <div class="user-profile-header">
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600;" id="adminNavName">Administrator</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Admin Panel</div>
+                    </div>
+                    <div class="avatar-small" id="adminNavAvatar">A</div>
+                </div>
+            </header>
+
+            <div id="adminErrorAlert" class="alert error" style="display: none;">
+                <span id="adminErrorText">Error message here</span>
+            </div>
+
+            <div id="usersView">
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Search by Name</label>
+                        <input type="text" id="filterName" placeholder="e.g. John Doe">
+                    </div>
+                    <div class="filter-group">
+                        <label>Search by Username</label>
+                        <input type="text" id="filterUsername" placeholder="e.g. johndoe123">
+                    </div>
+                    <div class="filter-group">
+                        <label>Before Date</label>
+                        <input type="date" id="filterBeforeDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>After Date</label>
+                        <input type="date" id="filterAfterDate">
+                    </div>
+                    <div class="btn-group" style="grid-column: 1 / -1;">
+                        <button class="btn btn-secondary" onclick="clearFilters()" style="flex: 0 0 auto;">Clear</button>
+                        <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+                        <button class="btn btn-secondary" onclick="fetchAllUsers()" style="flex: 0 0 auto;" title="Load all users">↻</button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Username</th>
+                                <th>Joined Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                    
+                    <div id="loadingState" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Loading users...</p>
+                    </div>
+
+                    <div id="emptyState" class="empty-state" style="display: none;">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>No users found</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Tickets View -->
+            <div id="ticketsView" style="display: none;">
+                <div class="filters" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-primary" id="btnUnassigned" onclick="loadUnassignedTickets()">Unassigned Tickets</button>
+                    <button class="btn btn-secondary" id="btnMyTickets" onclick="loadMyTickets()">My Assigned Tickets</button>
+                </div>
+
+                <div id="adminTicketList" class="ticket-list">
+                    <!-- Admin tickets will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Configuration
+        let API_BASE_URL = localStorage.getItem('api_url') || 'http://localhost:5000';
+        document.getElementById('apiUrlInput').value = API_BASE_URL;
+
+        let currentRole = 'user';
+        let currentToken = '';
+        let currentUserId = '';
+
+        function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('active'); }
+        function updateApiUrl(val) { API_BASE_URL = val; localStorage.setItem('api_url', val); }
+
+        // Login Elements
+        const loginWrapper = document.getElementById('loginWrapper');
+        const loginScreen = document.getElementById('loginScreen');
+        const profileScreen = document.getElementById('profileScreen');
+        const adminLayout = document.getElementById('adminLayout');
+        const authForm = document.getElementById('authForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        function switchTab(role) {
+            currentRole = role;
+            if (role === 'user') {
+                document.getElementById('userTab').classList.add('active');
+                document.getElementById('adminTab').classList.remove('active');
+                document.getElementById('headerSubtitle').textContent = 'Welcome back! User login.';
+            } else {
+                document.getElementById('adminTab').classList.add('active');
+                document.getElementById('userTab').classList.remove('active');
+                document.getElementById('headerSubtitle').textContent = 'Administrator access.';
+            }
+            errorMessage.style.display = 'none';
+        }
+
+        authForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            setLoading(true);
+            errorMessage.style.display = 'none';
+
+            const endpoint = currentRole === 'user' ? '/auth/user/login' : '/auth/admin/login';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, username, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentToken = data.token || ''; // Save token for admin API calls
+                    currentUserId = data.id || ''; // Save current user ID
+                    if (currentRole === 'admin') {
+                        showAdminDashboard(data);
+                    } else {
+                        showProfile(data, currentRole);
+                    }
+                } else {
+                    throw new Error(data.message || 'Authentication failed');
+                }
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorMessage.style.display = 'block';
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            btnText.style.display = isLoading ? 'none' : 'inline';
+            btnSpinner.style.display = isLoading ? 'block' : 'none';
+        }
+
+        function showProfile(data, role) {
+            document.getElementById('profileName').textContent = data.name;
+            document.getElementById('profileAvatar').textContent = data.name.charAt(0).toUpperCase();
+            document.getElementById('infoUsername').textContent = `@${data.username}`;
+            document.getElementById('infoRoleBadge').textContent = role;
+            document.getElementById('infoRoleBadge').className = `badge badge-${role}`;
+            document.getElementById('infoJoined').textContent = new Date(data.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            loginScreen.style.display = 'none';
+            profileScreen.style.display = 'block';
+            profileScreen.classList.add('animate-fade-in');
+            loadUserTickets();
+        }
+
+        function showAdminDashboard(data) {
+            document.getElementById('adminNavName').textContent = data.name;
+            document.getElementById('adminNavAvatar').textContent = data.name.charAt(0).toUpperCase();
+
+            loginWrapper.style.display = 'none';
+            adminLayout.style.display = 'flex';
+            adminLayout.classList.add('animate-fade-in');
+
+            fetchAllUsers();
+        }
+
+        function logout() {
+            loginWrapper.style.display = 'flex';
+            loginScreen.style.display = 'block';
+            profileScreen.style.display = 'none';
+            adminLayout.style.display = 'none';
+            authForm.reset();
+            currentToken = '';
+            currentUserId = '';
+            switchTab('user');
+        }
+
+        // --- Admin API Logic ---
+        const tableBody = document.getElementById('usersTableBody');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const adminErrorAlert = document.getElementById('adminErrorAlert');
+
+        function showAdminError(msg) {
+            document.getElementById('adminErrorText').textContent = msg;
+            adminErrorAlert.style.display = 'flex';
+            setTimeout(() => { adminErrorAlert.style.display = 'none'; }, 5000);
+        }
+
+        function showTableLoading(isLoading) {
+            loadingState.style.display = isLoading ? 'block' : 'none';
+            if (isLoading) { tableBody.innerHTML = ''; emptyState.style.display = 'none'; }
+        }
+
+        function renderUsers(users) {
+            tableBody.innerHTML = '';
+            if (!users || users.length === 0) { emptyState.style.display = 'block'; return; }
+            emptyState.style.display = 'none';
+
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
+                const formattedDate = new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+                tr.innerHTML = `
+                    <td><div class="user-cell"><div class="avatar-list">${initial}</div><div style="font-weight: 600;">${user.name}</div></div></td>
+                    <td><span class="username-badge">@${user.username}</span></td>
+                    <td style="color: var(--text-muted);">${formattedDate}</td>
+                    <td><span style="color: var(--success); font-size: 0.85rem;">Active</span></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        async function fetchApi(endpoint) {
+            showTableLoading(true);
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || `Error: ${response.status}`);
+                renderUsers(Array.isArray(data) ? data : [data]);
+            } catch (err) {
+                showAdminError(err.message);
+                renderUsers([]); 
+            } finally {
+                showTableLoading(false);
+            }
+        }
+
+        async function fetchAllUsers() { await fetchApi('/users/all'); }
+
+        async function applyFilters() {
+            const name = document.getElementById('filterName').value.trim();
+            const username = document.getElementById('filterUsername').value.trim();
+            const bDate = document.getElementById('filterBeforeDate').value;
+            const aDate = document.getElementById('filterAfterDate').value;
+
+            if (name) await fetchApi(`/users/by-name?name=${encodeURIComponent(name)}`);
+            else if (username) await fetchApi(`/users/by-username?username=${encodeURIComponent(username)}`);
+            else if (bDate) await fetchApi(`/users/before-date?date=${encodeURIComponent(bDate)}`);
+            else if (aDate) await fetchApi(`/users/after-date?date=${encodeURIComponent(aDate)}`);
+            else await fetchAllUsers();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterName').value = '';
+            document.getElementById('filterUsername').value = '';
+            document.getElementById('filterBeforeDate').value = '';
+            document.getElementById('filterAfterDate').value = '';
+            fetchAllUsers();
+        }
+
+        // --- Ticket System Logic ---
+        let currentTicketId = null;
+        let ticketsCache = [];
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function switchAdminTab(tab) {
+            document.getElementById('usersView').style.display = tab === 'users' ? 'block' : 'none';
+            document.getElementById('ticketsView').style.display = tab === 'tickets' ? 'block' : 'none';
+            document.getElementById('navUsers').classList.toggle('active', tab === 'users');
+            document.getElementById('navTickets').classList.toggle('active', tab === 'tickets');
+            
+            if (tab === 'tickets') loadUnassignedTickets();
+            else fetchAllUsers();
+        }
+
+        async function loadUserTickets() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/ticket/user`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const tickets = await response.json();
+                renderTickets('userTicketList', tickets);
+            } catch (err) { console.error('Failed to load tickets', err); }
+        }
+
+        async function loadUnassignedTickets() {
+            document.getElementById('btnUnassigned').className = 'btn btn-primary';
+            document.getElementById('btnMyTickets').className = 'btn btn-secondary';
+            try {
+                const response = await fetch(`${API_BASE_URL}/ticket/not-assign`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const tickets = await response.json();
+                renderTickets('adminTicketList', tickets, true);
+            } catch (err) { showAdminError('Failed to load unassigned tickets'); }
+        }
+
+        async function loadMyTickets() {
+            document.getElementById('btnUnassigned').className = 'btn btn-secondary';
+            document.getElementById('btnMyTickets').className = 'btn btn-primary';
+            try {
+                const response = await fetch(`${API_BASE_URL}/ticket/admin`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const tickets = await response.json();
+                renderTickets('adminTicketList', tickets, false);
+            } catch (err) { showAdminError('Failed to load assigned tickets'); }
+        }
+
+        function renderTickets(containerId, tickets, isUnassigned = false) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (tickets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">No tickets found.</p>';
+                return;
+            }
+            tickets.forEach(ticket => {
+                const div = document.createElement('div');
+                div.className = 'ticket-card';
+                div.onclick = () => openTicketDetail(ticket, isUnassigned);
+                const statusText = ticket.isSolved ? 'Solved' : 'Open';
+                const statusClass = ticket.isSolved ? 'status-solved' : 'status-open';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <div class="title">${ticket.title}</div>
+                        <span class="status-tag ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="meta">
+                        <span>ID: ${ticket.id.substring(0,8)}...</span>
+                        <span>${new Date(ticket.createdAt).toLocaleDateString()}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function openCreateTicketModal() {
+            document.getElementById('newTicketTitle').value = '';
+            openModal('createTicketModal');
+        }
+
+        async function submitTicket() {
+            const title = document.getElementById('newTicketTitle').value.trim();
+            if (!title) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/ticket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ title })
+                });
+                if (response.ok) {
+                    closeModal('createTicketModal');
+                    loadUserTickets();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Error creating ticket');
+                }
+            } catch (err) { alert('Request failed'); }
+        }
+
+        async function openTicketDetail(ticket, isUnassigned = false) {
+            currentTicketId = ticket.id;
+            document.getElementById('modalTicketTitle').textContent = ticket.title;
+            document.getElementById('modalTicketMeta').textContent = `Created on ${new Date(ticket.createdAt).toLocaleString()}`;
+            
+            const statusTag = document.getElementById('modalTicketStatus');
+            statusTag.textContent = ticket.isSolved ? 'Solved' : 'Open';
+            statusTag.className = `status-tag ${ticket.isSolved ? 'status-solved' : 'status-open'}`;
+
+            // UI Adjustments for Admin/User
+            const isAdmin = currentRole === 'admin';
+            document.getElementById('adminAssignSection').style.display = (isAdmin && isUnassigned) ? 'block' : 'none';
+            document.getElementById('chatInputArea').style.display = (isUnassigned && isAdmin) || ticket.isSolved ? 'none' : 'flex';
+            document.getElementById('solveTicketBtn').style.display = (isAdmin && !isUnassigned && !ticket.isSolved) ? 'block' : 'none';
+
+            loadMessages();
+            openModal('ticketDetailModal');
+        }
+
+        async function loadMessages() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Loading messages...</p>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/message/all`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ ticketId: currentTicketId })
+                });
+                const messages = await response.json();
+                renderMessages(messages);
+            } catch (err) { chatMessages.innerHTML = 'Error loading messages.'; }
+        }
+
+        function renderMessages(messages) {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+            
+            // Since we don't have the current user's ID easily available in the frontend state yet,
+            // we'll assume messages sent by the person who is logged in should be 'sent'.
+            // In a real app, you'd decode the JWT or have a user object.
+            // For now, let's just show them all and highlight based on some logic if possible.
+            // Let's assume the first message's sender is the user who created the ticket.
+            
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                const isSentByMe = msg.senderId === currentUserId;
+                
+                div.className = `message ${isSentByMe ? 'sent' : 'received'}`;
+                div.innerHTML = `
+                    ${msg.content}
+                    ${isSentByMe ? `<div class="delete-msg" onclick="deleteMessage('${msg.id}')">&times;</div>` : ''}
+                `;
+                chatMessages.appendChild(div);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            if (!content) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ content, ticketId: currentTicketId })
+                });
+                if (response.ok) {
+                    input.value = '';
+                    loadMessages();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function deleteMessage(messageId) {
+            if (!confirm('Delete this message?')) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/message`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ messageId })
+                });
+                if (response.ok) loadMessages();
+                else {
+                    const data = await response.json();
+                    alert(data.message);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function assignTicketToMe() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/ticket/assign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ ticketId: currentTicketId })
+                });
+                if (response.ok) {
+                    loadUnassignedTickets();
+                    closeModal('ticketDetailModal');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function solveTicket() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/ticket/solve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ ticketId: currentTicketId })
+                });
+                if (response.ok) {
+                    loadMyTickets();
+                    closeModal('ticketDetailModal');
+                }
+            } catch (err) { console.error(err); }
+        }
+    </script>
+</body>
+</html>

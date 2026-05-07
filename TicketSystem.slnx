@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TicketSystem.Api/TicketSystem.Api.csproj" />
+    <Project Path="src/TicketSystem.Application/TicketSystem.Application.csproj" />
+    <Project Path="src/TicketSystem.Domain/TicketSystem.Domain.csproj" />
+    <Project Path="src/TicketSystem.Infrastructure/TicketSystem.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/TicketSystem.Api.Tests/TicketSystem.Api.Tests.csproj" />
+  </Folder>
+</Solution>
