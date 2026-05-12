@@ -4,13 +4,12 @@ using TicketSystem.Application.Dtos.Users;
 using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Application.Common.Interface;
 using TicketSystem.Domain.Entities;
-using TicketSystem.Infrastructure.Security;
 
 namespace TicketSystem.Api.Controllers;
 
 [ApiController]
 [Route("auth")]
-public sealed class AuthController(IUserRepository userRepository, IAdminRepository adminRepository, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, IRefreshTokenGenerator refreshTokenGenerator, ISessionRepo sessionRepo) : ControllerBase
+public sealed class AuthController(IUserRepository userRepository, IAdminRepository adminRepository, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, IRefreshTokenGenerator refreshTokenGenerator, ISessionRepo sessionRepo, IRefreshTokenHasher refreshTokenHasher) : ControllerBase
 {
     [HttpPost("user/login")]
     public async Task<ActionResult<CreateUserReponse>> LoginOrRegisterUser([FromBody] CreateUserDto dto)
@@ -21,7 +20,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         }
 
         var createdRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
-        var createdRefreshTokenHash = passwordHasher.Hash(createdRefreshToken);
+        var createdRefreshTokenHash = refreshTokenHasher.Hash(createdRefreshToken);
 
         var userFromDb = await userRepository.GetUserByUsername(dto.Username);
 
@@ -34,7 +33,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
             var createdToken = jwtTokenService.GenerateUserToken(newUser);
 
-            await CreateUserSession(createdRefreshToken, newUser.Id);
+            await CreateUserSession(createdRefreshTokenHash, newUser.Id);
 
             return Ok(new CreateUserReponse
             {
@@ -56,7 +55,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
         var token = jwtTokenService.GenerateUserToken(userFromDb);
 
-        await CreateUserSession(createdRefreshToken, userFromDb.Id);
+        await CreateUserSession(createdRefreshTokenHash, userFromDb.Id);
 
 
         return Ok(new CreateUserReponse
@@ -79,7 +78,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         }
 
         var createdRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
-        var createdRefreshTokenHash = passwordHasher.Hash(createdRefreshToken);
+        var createdRefreshTokenHash = refreshTokenHasher.Hash(createdRefreshToken);
 
         var adminFromDb = await adminRepository.GetAdminByUsername(dto.Username);
 
@@ -93,7 +92,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
             var createdToken = jwtTokenService.GenerateAdminToken(admin);
 
-            await CreateAdminSession(createdRefreshToken, admin.Id);
+            await CreateAdminSession(createdRefreshTokenHash, admin.Id);
 
 
             return Ok(new CreateAdminReponse
@@ -102,6 +101,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
                 Name = admin.Name,
                 Username = admin.Username,
                 Token = createdToken,
+                RefreshToken = createdRefreshToken,
                 CreatedAt = admin.CreatedAt
             });
 
@@ -116,15 +116,6 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
         var token = jwtTokenService.GenerateAdminToken(adminFromDb);
 
-        var session_2 = new Session(
-            createdRefreshTokenHash,
-            adminFromDb.Id,          // adminId
-            null,             // userId
-            true,             // isAdmin
-            DateTime.UtcNow.AddDays(30)
-        );
-
-        await sessionRepo.CreateSession(session_2);
 
         await CreateAdminSession(createdRefreshTokenHash, adminFromDb.Id);
 
@@ -134,6 +125,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             Name = adminFromDb.Name,
             Username = adminFromDb.Username,
             Token = token,
+            RefreshToken = createdRefreshToken,
             CreatedAt = adminFromDb.CreatedAt
         });
     }

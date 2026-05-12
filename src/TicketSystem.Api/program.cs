@@ -27,6 +27,7 @@ builder.Services.AddScoped<ITicketRepository, TicketRepo>();
 builder.Services.AddScoped<ITicketMessageRepository, TicketMessageRepo>();
 builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<ISessionRepo, SessionRepo>();
+builder.Services.AddScoped<IRefreshTokenHasher, RefreshTokenHasher>();
 
 
 var jwt = builder.Configuration.GetSection("Jwt");
