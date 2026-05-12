@@ -17,17 +17,22 @@ public class AdminRepo(AppDbContext db) : IAdminRepository
 
     public async Task<Admin?> IsAdmin(Guid id)
     {
-        return await _db.Admins.FirstOrDefaultAsync(s => s.Id == id);
+        return await _db.Admins
+        .FirstOrDefaultAsync(s => s.Id == id);
     }
 
     public async Task<List<Admin>> GetAllAdmins()
     {
-        return await _db.Admins.AsNoTracking().ToListAsync();
+        return await _db.Admins
+        .AsNoTracking()
+        .ToListAsync();
     }
 
     public async Task<Admin?> GetAdminByUsername(string username)
     {
-        return await _db.Admins.AsNoTracking().FirstOrDefaultAsync(s => s.Username == username);
+        return await _db.Admins
+        .AsNoTracking()
+        .FirstOrDefaultAsync(s => s.Username == username);
     }
 
 

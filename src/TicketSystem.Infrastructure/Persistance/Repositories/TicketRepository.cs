@@ -20,27 +20,40 @@ public class TicketRepo(AppDbContext db) : ITicketRepository
 
     public async Task<Ticket?> GetTicketViaTicketId(Guid ticketId)
     {
-        return await _db.Tickets.AsNoTracking().FirstOrDefaultAsync(s => s.Id == ticketId);
+        return await _db.Tickets
+        .AsNoTracking()
+        .FirstOrDefaultAsync(s => s.Id == ticketId);
     }
 
     public async Task<List<Ticket>> GetAllUserTicket(Guid userId)
     {
-        return await _db.Tickets.AsNoTracking().Where(s => s.UserId == userId).ToListAsync();
+        return await _db.Tickets
+        .AsNoTracking()
+        .Where(s => s.UserId == userId)
+        .ToListAsync();
     }
 
     public async Task<List<Ticket>> GetAllAdminTicket(Guid adminId)
     {
-        return await _db.Tickets.AsNoTracking().Where(s => s.AdminId == adminId).ToListAsync();
+        return await _db.Tickets.AsNoTracking()
+        .Where(s => s.AdminId == adminId)
+        .ToListAsync();
     }
 
     public async Task<List<Ticket>> GetAllNotAssingedTicket()
     {
-        return await _db.Tickets.AsNoTracking().Where(s => s.AdminId == null).ToListAsync();
+        return await _db.Tickets
+        .AsNoTracking()
+        .Where(s => s.AdminId == null)
+        .ToListAsync();
     }
 
     public async Task<bool> AssignTicketToAdmin(Guid ticketId, Guid adminId)
     {
-        var ticket = await _db.Tickets.FirstOrDefaultAsync(s => s.Id == ticketId && s.AdminId == null);
+        var ticket = await _db.Tickets
+        .FirstOrDefaultAsync(
+            s => s.Id == ticketId &&
+            s.AdminId == null);
 
         if (ticket is null)
         {
@@ -57,7 +70,10 @@ public class TicketRepo(AppDbContext db) : ITicketRepository
 
     public async Task<bool> ChangeStatusOfSolveToTrue(Guid ticketId, Guid adminId)
     {
-        var ticket = await _db.Tickets.FirstOrDefaultAsync(s => s.Id == ticketId && s.AdminId == adminId);
+        var ticket = await _db.Tickets
+        .FirstOrDefaultAsync(
+            s => s.Id == ticketId &&
+            s.AdminId == adminId);
 
         if (ticket is null)
         {

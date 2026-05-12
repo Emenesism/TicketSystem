@@ -19,13 +19,20 @@ public class TicketMessageRepo(AppDbContext db) : ITicketMessageRepository
 
     public async Task<List<TicketMessage>> GetAllMessageRelatedOfTicket(Guid ticketId)
     {
-        return await _db.TicketMessages.AsNoTracking().Where(s => s.TicketId == ticketId).OrderBy(s => s.CreatedAt).ToListAsync();
+        return await _db.TicketMessages
+        .AsNoTracking()
+        .Where(s => s.TicketId == ticketId)
+        .OrderBy(s => s.CreatedAt)
+        .ToListAsync();
     }
 
 
     public async Task<bool> DeleteMessage(Guid messageId, Guid senderId)
     {
-        var message = await _db.TicketMessages.FirstOrDefaultAsync(s => s.Id == messageId && s.SenderId == senderId);
+        var message = await _db.TicketMessages
+        .FirstOrDefaultAsync(
+            s => s.Id == messageId &&
+            s.SenderId == senderId);
 
         if (message is null)
             return false;
