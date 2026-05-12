@@ -4,6 +4,9 @@ using TicketSystem.Application.Dtos.Users;
 using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Application.Common.Interface;
 using TicketSystem.Domain.Entities;
+using TicketSystem.Application.Dtos.Auth;
+using Microsoft.AspNetCore.Authorization;
+using TicketSystem.Infrastructure.Security;
 
 namespace TicketSystem.Api.Controllers;
 
@@ -130,6 +133,131 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         });
     }
 
+    [HttpPost("admin/refresh")]
+    public async Task<ActionResult<RefreshTokenResponse>> RenewAdminAccessToken([FromBody] RefreshTokenDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var RefreshTokenHash = refreshTokenHasher.Hash(dto.RefreshToken);
+
+        var session = await sessionRepo.GetSessionByHashToken(RefreshTokenHash);
+
+        if (session is null)
+        {
+            return Unauthorized(new
+            {
+                message = "Refresh Token Is Not Valid."
+            });
+        }
+
+        if (session.AdminId is null)
+        {
+            return Unauthorized(new
+            {
+                message = "You Are In Wrong Place Dude."
+            });
+        }
+
+        var adminFromDb = await adminRepository.GetAdminById(session.AdminId.Value);
+
+        if (adminFromDb is null)
+        {
+            return Unauthorized(new
+            {
+                message = "You Are In Wrong Place Dude."
+            });
+        }
+
+        var revokeStatus = await sessionRepo.RevokeSession(session.Id);
+
+        if (!revokeStatus)
+        {
+            return Unauthorized(new
+            {
+                message = "Failed To Revoke Old Session."
+            });
+        }
+
+        var newAccessToken = jwtTokenService.GenerateAdminToken(adminFromDb);
+        var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
+        var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
+
+        await CreateAdminSession(newRefreshTokenHash, session.AdminId.Value);
+
+        return Ok(new RefreshTokenResponse
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken,
+        });
+
+    }
+
+    [HttpPost("user/refresh")]
+    public async Task<ActionResult<RefreshTokenResponse>> RenewUserAccessToken([FromBody] RefreshTokenDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var RefreshTokenHash = refreshTokenHasher.Hash(dto.RefreshToken);
+
+        var session = await sessionRepo.GetSessionByHashToken(RefreshTokenHash);
+
+        if (session is null)
+        {
+            return Unauthorized(new
+            {
+                message = "Refresh Token Is Not Valid."
+            });
+        }
+
+        if (session.UserId is null)
+        {
+            return Unauthorized(new
+            {
+                message = "You Are In Wrong Place Dude."
+            });
+        }
+
+        var userFromDb = await userRepository.GetUserById(session.UserId.Value);
+
+        if (userFromDb is null)
+        {
+            return Unauthorized(new
+            {
+                message = "You Are In Wrong Place Dude."
+            });
+        }
+
+        var revokeStatus = await sessionRepo.RevokeSession(session.Id);
+
+        if (!revokeStatus)
+        {
+            return Unauthorized(new
+            {
+                message = "Failed To Revoke Old Session."
+            });
+        }
+
+        var newAccessToken = jwtTokenService.GenerateUserToken(userFromDb);
+        var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
+        var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
+
+        await CreateAdminSession(newRefreshTokenHash, session.UserId.Value);
+
+        return Ok(new RefreshTokenResponse
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken,
+        });
+
+    }
+
+
     private async Task CreateUserSession(string refreshToken, Guid userId)
     {
         var session = new Session(
@@ -155,5 +283,8 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
         await sessionRepo.CreateSession(session);
     }
+
+
+
 
 }

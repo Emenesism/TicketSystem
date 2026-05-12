@@ -35,6 +35,13 @@ public class AdminRepo(AppDbContext db) : IAdminRepository
         .FirstOrDefaultAsync(s => s.Username == username);
     }
 
+    public async Task<Admin?> GetAdminById(Guid id)
+    {
+        return await _db.Admins
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == id);
+    }
+
 
 
 }

@@ -10,4 +10,5 @@ public interface IUserRepository
     Task<User?> GetUserByUsername(string username);
     Task<List<User>> GetAllUserAfterCertianDate(DateTime date);
     Task<List<User>> GetAllUserBeforeCertianDate(DateTime date);
+    Task<User?> GetUserById(Guid id);
 }

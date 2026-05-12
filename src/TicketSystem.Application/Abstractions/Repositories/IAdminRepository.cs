@@ -9,4 +9,5 @@ public interface IAdminRepository
     Task<Admin?> IsAdmin(Guid id);
     Task<List<Admin>> GetAllAdmins();
     Task<Admin?> GetAdminByUsername(string username);
+    Task<Admin?> GetAdminById(Guid id);
 }

@@ -53,5 +53,12 @@ public class UserRepo(AppDbContext db) : IUserRepository
         .ToListAsync();
     }
 
+    public async Task<User?> GetUserById(Guid id)
+    {
+        return await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == id);
+    }
+
 
 }
