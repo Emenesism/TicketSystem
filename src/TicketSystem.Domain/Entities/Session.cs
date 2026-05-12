@@ -9,4 +9,5 @@ public class Session(string tokenHash, Guid? adminId, Guid? userId, bool isAdmin
     public bool IsAdmin { get; set; } = isAdmin;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ExpiresAt { get; set; } = expiresAt;
+    public DateTime? RevokeAt { get; set; }
 }

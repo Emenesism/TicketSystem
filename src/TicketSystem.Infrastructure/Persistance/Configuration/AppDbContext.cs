@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Admin> Admins { get; set; }
     public DbSet<Ticket> Tickets { get; set; }
     public DbSet<TicketMessage> TicketMessages { get; set; }
+    public DbSet<Session> Sessions { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -28,5 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         modelBuilder.Entity<Ticket>().HasMany(t => t.Messages).WithOne(m => m.Ticket).HasForeignKey(m => m.TicketId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Ticket>().HasOne(t => t.User).WithMany(u => u.Tickets).HasForeignKey(u => u.UserId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Ticket>().HasOne(t => t.Admin).WithMany(u => u.Tickets).HasForeignKey(u => u.AdminId).OnDelete(DeleteBehavior.Restrict);
+
+
     }
 }
