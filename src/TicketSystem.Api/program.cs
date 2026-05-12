@@ -8,7 +8,6 @@ using Microsoft.IdentityModel.Tokens;
 using TicketSystem.Infrastructure.Persistance.Configuration;
 using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Infrastructure.Persistance.Repositories;
-using Microsoft.AspNetCore.Components.Infrastructure;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +25,9 @@ builder.Services.AddScoped<IUserRepository, UserRepo>();
 builder.Services.AddScoped<IAdminRepository, AdminRepo>();
 builder.Services.AddScoped<ITicketRepository, TicketRepo>();
 builder.Services.AddScoped<ITicketMessageRepository, TicketMessageRepo>();
+builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
+builder.Services.AddScoped<ISessionRepo, SessionRepo>();
+
 
 var jwt = builder.Configuration.GetSection("Jwt");
 

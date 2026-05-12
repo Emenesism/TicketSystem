@@ -4,14 +4,13 @@ using TicketSystem.Application.Dtos.Users;
 using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Application.Common.Interface;
 using TicketSystem.Domain.Entities;
-
-
+using TicketSystem.Infrastructure.Security;
 
 namespace TicketSystem.Api.Controllers;
 
 [ApiController]
 [Route("auth")]
-public sealed class AuthController(IUserRepository userRepository, IAdminRepository adminRepository, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService) : ControllerBase
+public sealed class AuthController(IUserRepository userRepository, IAdminRepository adminRepository, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, IRefreshTokenGenerator refreshTokenGenerator, ISessionRepo sessionRepo) : ControllerBase
 {
     [HttpPost("user/login")]
     public async Task<ActionResult<CreateUserReponse>> LoginOrRegisterUser([FromBody] CreateUserDto dto)
@@ -20,6 +19,9 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         {
             return ValidationProblem(ModelState);
         }
+
+        var createdRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
+        var createdRefreshTokenHash = passwordHasher.Hash(createdRefreshToken);
 
         var userFromDb = await userRepository.GetUserByUsername(dto.Username);
 
@@ -32,12 +34,15 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
             var createdToken = jwtTokenService.GenerateUserToken(newUser);
 
+            await CreateUserSession(createdRefreshToken, newUser.Id);
+
             return Ok(new CreateUserReponse
             {
                 Id = newUser.Id,
                 Name = newUser.Name,
                 Username = newUser.Username,
                 Token = createdToken,
+                RefreshToken = createdRefreshToken,
                 CreatedAt = newUser.CreatedAt
             });
         }
@@ -51,12 +56,16 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
         var token = jwtTokenService.GenerateUserToken(userFromDb);
 
+        await CreateUserSession(createdRefreshToken, userFromDb.Id);
+
+
         return Ok(new CreateUserReponse
         {
             Id = userFromDb.Id,
             Name = userFromDb.Name,
             Username = userFromDb.Username,
             Token = token,
+            RefreshToken = createdRefreshToken,
             CreatedAt = userFromDb.CreatedAt
         });
     }
@@ -69,6 +78,9 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             return ValidationProblem(ModelState);
         }
 
+        var createdRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
+        var createdRefreshTokenHash = passwordHasher.Hash(createdRefreshToken);
+
         var adminFromDb = await adminRepository.GetAdminByUsername(dto.Username);
 
         if (adminFromDb is null)
@@ -80,6 +92,9 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             await adminRepository.CreateAdmin(admin);
 
             var createdToken = jwtTokenService.GenerateAdminToken(admin);
+
+            await CreateAdminSession(createdRefreshToken, admin.Id);
+
 
             return Ok(new CreateAdminReponse
             {
@@ -101,6 +116,18 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
 
         var token = jwtTokenService.GenerateAdminToken(adminFromDb);
 
+        var session_2 = new Session(
+            createdRefreshTokenHash,
+            adminFromDb.Id,          // adminId
+            null,             // userId
+            true,             // isAdmin
+            DateTime.UtcNow.AddDays(30)
+        );
+
+        await sessionRepo.CreateSession(session_2);
+
+        await CreateAdminSession(createdRefreshTokenHash, adminFromDb.Id);
+
         return Ok(new CreateAdminReponse
         {
             Id = adminFromDb.Id,
@@ -109,6 +136,32 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             Token = token,
             CreatedAt = adminFromDb.CreatedAt
         });
+    }
+
+    private async Task CreateUserSession(string refreshToken, Guid userId)
+    {
+        var session = new Session(
+            refreshToken,
+            null,
+            userId,
+            false,
+            DateTime.UtcNow.AddDays(30)
+        );
+
+        await sessionRepo.CreateSession(session);
+    }
+
+    private async Task CreateAdminSession(string refreshToken, Guid adminId)
+    {
+        var session = new Session(
+            refreshToken,
+            adminId,
+            null,
+            true,
+            DateTime.UtcNow.AddDays(30)
+        );
+
+        await sessionRepo.CreateSession(session);
     }
 
 }

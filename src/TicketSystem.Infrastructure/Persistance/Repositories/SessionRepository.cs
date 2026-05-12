@@ -1,8 +1,9 @@
 using TicketSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using TicketSystem.Infrastructure.Persistance.Configuration;
+using TicketSystem.Application.Abstractions.Repositories;
 
-public class SessionRepo(AppDbContext db)
+public class SessionRepo(AppDbContext db) : ISessionRepo
 {
     private readonly AppDbContext _db = db;
 
