@@ -1,4 +1,4 @@
-namespace TicketSystem.Api.Dtos.Admins;
+namespace TicketSystem.Application.Dtos.Admins;
 
 public class UpdateAdminResponse
 {

@@ -1,11 +1,10 @@
-using TicketSystem.Api.Dtos;
 using TicketSystem.Domain.Entities;
 using TicketSystem.Application.Abstractions.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using TicketSystem.Api.Dtos.Messages;
+using TicketSystem.Application.Dtos.Messages;
 using System.Security.Claims;
-using TicketSystem.Api.Dtos.Tickets;
+using TicketSystem.Application.Dtos.Tickets;
 
 
 [ApiController]

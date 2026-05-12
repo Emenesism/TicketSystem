@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using TicketSystem.Api.Dtos.Tickets;
+using TicketSystem.Application.Dtos.Tickets;
 using TicketSystem.Application.Abstractions.Repositories;
-using TicketSystem.Infrastructure.Persistance.Repositories;
 using TicketSystem.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;

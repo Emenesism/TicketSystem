@@ -1,9 +1,7 @@
-
-
-
 using System.ComponentModel.DataAnnotations;
 
-namespace TicketSystem.Api.Dtos.Tickets;
+namespace TicketSystem.Application.Dtos.Tickets;
+
 
 public class TicketIdDto
 {

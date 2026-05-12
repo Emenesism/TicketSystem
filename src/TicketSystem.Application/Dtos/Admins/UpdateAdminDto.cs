@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TicketSystem.Api.Dtos.Admins;
+namespace TicketSystem.Application.Dtos.Admins;
 
 public class UpdateAdminDto
 {

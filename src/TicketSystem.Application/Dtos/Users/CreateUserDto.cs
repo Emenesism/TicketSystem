@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TicketSystem.Api.Dtos.Admins;
+namespace TicketSystem.Application.Dtos.Users;
 
-public class CreateAdminDto
+public class CreateUserDto
 {
     [Required(ErrorMessage = "Name Property Is Required")]
     [MinLength(3, ErrorMessage = "Name Must At Least 3 Char")]

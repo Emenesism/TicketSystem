@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using TicketSystem.Api.Dtos.Admins;
-using TicketSystem.Api.Dtos.Users;
+using TicketSystem.Application.Dtos.Admins;
+using TicketSystem.Application.Dtos.Users;
 using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Application.Common.Interface;
 using TicketSystem.Domain.Entities;

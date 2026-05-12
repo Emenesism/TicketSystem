@@ -1,6 +1,6 @@
-namespace TicketSystem.Api.Dtos.Users;
+namespace TicketSystem.Application.Dtos.Admins;
 
-public class CreateUserReponse
+public class CreateAdminReponse
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TicketSystem.Application.Abstractions.Repositories;
-using TicketSystem.Domain.Entities;
-using TicketSystem.Api.Dtos.Users;
-using Microsoft.EntityFrameworkCore.Metadata;
+using TicketSystem.Application.Dtos.Users;
 
 namespace TicketSystem.Api.Controllers;
 

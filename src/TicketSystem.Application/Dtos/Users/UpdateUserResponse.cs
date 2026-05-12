@@ -1,4 +1,4 @@
-namespace TicketSystem.Api.Dtos.Users;
+namespace TicketSystem.Application.Dtos.Users;
 
 public class UpdateUserResponse
 {

@@ -1,6 +1,7 @@
 
 using System.ComponentModel.DataAnnotations;
-namespace TicketSystem.Api.Dtos.Messages;
+namespace TicketSystem.Application.Dtos.Messages;
+
 
 public class MessageIdDto
 {
