@@ -276,10 +276,42 @@ public sealed class AuthController(
     }
 
 
-    private async Task CreateUserSession(string refreshToken, Guid userId)
+
+    [HttpPost("logout")]
+    public async Task<ActionResult> Logout()
+    {
+
+        var refreshToken = Request.Cookies["refreshToken"];
+
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return NoContent();
+        }
+
+        var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
+
+        var sessionFromDb = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
+
+        if (sessionFromDb is null)
+        {
+            DeleteRefreshTokenInCookie();
+            return NoContent();
+        }
+
+        await sessionRepo.RevokeSession(sessionFromDb.Id);
+
+        DeleteRefreshTokenInCookie();
+
+        return NoContent();
+
+    }
+
+
+
+    private async Task CreateUserSession(string refreshTokenHash, Guid userId)
     {
         var session = new Session(
-            refreshToken,
+            refreshTokenHash,
             null,
             userId,
             false,
@@ -289,10 +321,10 @@ public sealed class AuthController(
         await sessionRepo.CreateSession(session);
     }
 
-    private async Task CreateAdminSession(string refreshToken, Guid adminId)
+    private async Task CreateAdminSession(string refreshTokenHash, Guid adminId)
     {
         var session = new Session(
-            refreshToken,
+            refreshTokenHash,
             adminId,
             null,
             true,
@@ -313,6 +345,18 @@ public sealed class AuthController(
             Expires = DateTime.UtcNow.AddDays(30)
         });
 
+    }
+
+    private void DeleteRefreshTokenInCookie()
+    {
+        Response.Cookies.Delete("refreshToken", new CookieOptions
+        {
+            Path = "/auth",
+            Secure = false,
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+
+        });
     }
 
 }
