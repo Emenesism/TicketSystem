@@ -924,6 +924,13 @@
                         >
                             Logout
                         </button>
+                        <button
+                            class="logout-btn"
+                            onclick="logoutAll()"
+                            style="margin-top: 12px; border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;"
+                        >
+                            Log Out From All Devices
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1110,6 +1117,13 @@
 
                 <button class="sidebar-logout" onclick="logout()">
                     Log Out
+                </button>
+                <button 
+                    class="sidebar-logout" 
+                    onclick="logoutAll()"
+                    style="margin-top: 10px; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.1);"
+                >
+                    Log Out All Devices
                 </button>
             </aside>
 
@@ -1510,6 +1524,31 @@
 
                     switchTab("user");
                 });
+            }
+
+            async function logoutAll() {
+                if (
+                    !confirm("Are you sure you want to log out from all devices?")
+                )
+                    return;
+
+                const endpoint =
+                    currentRole === "admin"
+                        ? "/auth/admin/revoke-all"
+                        : "/auth/user/revoke-all";
+
+                try {
+                    await apiRequest(endpoint, {
+                        method: "POST",
+                        credentials: "include",
+                    });
+                    console.log("All sessions revoked successfully.");
+                } catch (e) {
+                    console.error("Logout all error", e);
+                } finally {
+                    // Always clear local state
+                    logout();
+                }
             }
 
             // --- App Initialization ---
