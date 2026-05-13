@@ -164,7 +164,12 @@ public sealed class AuthController(
 
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
 
-        await RevokeAllSessionIfReuseDetected(refreshTokenHash);
+        var reuseStatus = await RevokeAllSessionIfReuseDetected(refreshTokenHash);
+
+        if (reuseStatus)
+        {
+            return Unauthorized();
+        }
 
         var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
@@ -238,7 +243,12 @@ public sealed class AuthController(
 
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
 
-        await RevokeAllSessionIfReuseDetected(refreshTokenHash);
+        var status = await RevokeAllSessionIfReuseDetected(refreshTokenHash);
+
+        if (status)
+        {
+            return Unauthorized();
+        }
 
         var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
@@ -301,6 +311,7 @@ public sealed class AuthController(
         var refreshToken = Request.Cookies["refreshToken"];
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
+            DeleteRefreshTokenInCookie();
             return NoContent();
         }
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
@@ -381,18 +392,21 @@ public sealed class AuthController(
         await sessionRepo.CreateSession(session);
     }
 
-    private async Task RevokeAllSessionIfReuseDetected(string refreshTokenHash)
+    private async Task<bool> RevokeAllSessionIfReuseDetected(string refreshTokenHash)
     {
         var session = await sessionRepo.ReuseDetector(refreshTokenHash);
 
         if (session is not null)
         {
             await (session.IsAdmin ? sessionRepo.RevokeAllAdminSessions(session.AdminId!.Value) : sessionRepo.RevokeAllUserSessions(session.UserId!.Value));
+            DeleteRefreshTokenInCookie();
+            return true;
         }
 
-        return;
+        return false;
 
     }
+
     private void SetRefreshTokenInCookie(string refreshToken)
     {
         Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
