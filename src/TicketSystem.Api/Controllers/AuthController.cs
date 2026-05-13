@@ -5,6 +5,8 @@ using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Application.Common.Interface;
 using TicketSystem.Domain.Entities;
 using TicketSystem.Application.Dtos.Auth;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TicketSystem.Api.Controllers;
 
@@ -300,6 +302,35 @@ public sealed class AuthController(
         return NoContent();
 
     }
+
+    [HttpPost("admin/revoke-all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> RevokeAllAdminSessionsController()
+    {
+        var adminId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        await sessionRepo.RevokeAllAdminSessions(adminId);
+
+        DeleteRefreshTokenInCookie();
+
+        return NoContent();
+
+    }
+
+    [HttpPost("user/revoke-all")]
+    [Authorize(Roles = "User")]
+    public async Task<ActionResult> RevokeAllUserSessionsController()
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        await sessionRepo.RevokeAllUserSessions(userId);
+
+        DeleteRefreshTokenInCookie();
+
+        return NoContent();
+
+    }
+
 
 
 

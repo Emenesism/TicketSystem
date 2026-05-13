@@ -15,4 +15,6 @@ public interface ISessionRepo
     Task<bool> RevokeSession(Guid id);
 
     Task<Session?> GetSessionByHashToken(string tokenHash);
+    Task RevokeAllUserSessions(Guid userId);
+    Task RevokeAllAdminSessions(Guid adminId);
 }
