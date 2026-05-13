@@ -156,6 +156,8 @@ public sealed class AuthController(
 
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
 
+        await RevokeAllSessionIfReuseDetected(refreshTokenHash);
+
         var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
         if (session is null)
@@ -183,6 +185,7 @@ public sealed class AuthController(
                 message = "You Are In Wrong Place Dude."
             });
         }
+
 
         var revokeStatus = await sessionRepo.RevokeSession(session.Id);
 
@@ -223,6 +226,8 @@ public sealed class AuthController(
         }
 
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
+
+        await RevokeAllSessionIfReuseDetected(refreshTokenHash);
 
         var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
@@ -345,6 +350,19 @@ public sealed class AuthController(
         );
 
         await sessionRepo.CreateSession(session);
+    }
+
+    private async Task RevokeAllSessionIfReuseDetected(string refreshTokenHash)
+    {
+        var session = await sessionRepo.ReuseDetector(refreshTokenHash);
+
+        if (session is not null)
+        {
+            await (session.IsAdmin ? sessionRepo.RevokeAllAdminSessions(session.AdminId!.Value) : sessionRepo.RevokeAllUserSessions(session.UserId!.Value));
+        }
+
+        return;
+
     }
 
     private async Task CreateAdminSession(string refreshTokenHash, Guid adminId)

@@ -101,4 +101,15 @@ public class SessionRepo(AppDbContext db) : ISessionRepo
 
         await _db.SaveChangesAsync();
     }
+
+
+    public async Task<Session?> ReuseDetector(string tokenHash)
+    {
+        return await _db.Sessions
+        .AsNoTracking()
+        .FirstOrDefaultAsync(s =>
+            s.TokenHash == tokenHash &&
+            s.RevokeAt != null);
+
+    }
 }
