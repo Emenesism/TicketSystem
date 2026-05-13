@@ -57,11 +57,13 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:8080", "http://127.0.0.1:8080"];
-    options.AddPolicy("DefaultPolicy", policy =>
+    options.AddPolicy("Frontend", policy =>
     {
-        policy.AllowAnyOrigin()
-      .AllowAnyHeader()
-      .AllowAnyMethod();
+        policy
+          .WithOrigins("http://127.0.0.1:8080")
+          .AllowAnyHeader()
+          .AllowCredentials()
+          .AllowAnyMethod();
     });
 });
 
@@ -69,7 +71,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseCors("DefaultPolicy");
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -280,18 +280,14 @@ public sealed class AuthController(
     [HttpPost("logout")]
     public async Task<ActionResult> Logout()
     {
-
         var refreshToken = Request.Cookies["refreshToken"];
-
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
             return NoContent();
         }
-
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
 
         var sessionFromDb = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
-
         if (sessionFromDb is null)
         {
             DeleteRefreshTokenInCookie();
@@ -301,7 +297,6 @@ public sealed class AuthController(
         await sessionRepo.RevokeSession(sessionFromDb.Id);
 
         DeleteRefreshTokenInCookie();
-
         return NoContent();
 
     }
