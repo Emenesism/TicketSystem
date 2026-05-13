@@ -29,6 +29,8 @@ public sealed class AuthController(
             return ValidationProblem(ModelState);
         }
 
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var createdRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var createdRefreshTokenHash = refreshTokenHasher.Hash(createdRefreshToken);
 
@@ -43,7 +45,7 @@ public sealed class AuthController(
 
             var createdToken = jwtTokenService.GenerateUserToken(newUser);
 
-            await CreateUserSession(createdRefreshTokenHash, newUser.Id);
+            await CreateUserSession(createdRefreshTokenHash, newUser.Id, userAgent, ipAddress);
 
             SetRefreshTokenInCookie(createdRefreshToken);
 
@@ -66,7 +68,7 @@ public sealed class AuthController(
 
         var token = jwtTokenService.GenerateUserToken(userFromDb);
 
-        await CreateUserSession(createdRefreshTokenHash, userFromDb.Id);
+        await CreateUserSession(createdRefreshTokenHash, userFromDb.Id, userAgent, ipAddress);
 
         SetRefreshTokenInCookie(createdRefreshToken);
 
@@ -88,6 +90,8 @@ public sealed class AuthController(
             return ValidationProblem(ModelState);
         }
 
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var createdRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var createdRefreshTokenHash = refreshTokenHasher.Hash(createdRefreshToken);
 
@@ -103,7 +107,8 @@ public sealed class AuthController(
 
             var createdToken = jwtTokenService.GenerateAdminToken(admin);
 
-            await CreateAdminSession(createdRefreshTokenHash, admin.Id);
+
+            await CreateAdminSession(createdRefreshTokenHash, admin.Id, userAgent, ipAddress);
 
             SetRefreshTokenInCookie(createdRefreshToken);
 
@@ -128,7 +133,7 @@ public sealed class AuthController(
         var token = jwtTokenService.GenerateAdminToken(adminFromDb);
 
 
-        await CreateAdminSession(createdRefreshTokenHash, adminFromDb.Id);
+        await CreateAdminSession(createdRefreshTokenHash, adminFromDb.Id, userAgent, ipAddress);
         SetRefreshTokenInCookie(createdRefreshToken);
 
         return Ok(new CreateAdminReponse
@@ -144,6 +149,9 @@ public sealed class AuthController(
     [HttpPost("admin/refresh")]
     public async Task<ActionResult<RefreshTokenResponse>> RenewAdminAccessToken()
     {
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
         var refreshToken = Request.Cookies["refreshToken"];
 
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -201,7 +209,7 @@ public sealed class AuthController(
         var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
 
-        await CreateAdminSession(newRefreshTokenHash, session.AdminId.Value);
+        await CreateAdminSession(newRefreshTokenHash, session.AdminId.Value, userAgent, ipAddress);
 
         SetRefreshTokenInCookie(newRefreshToken);
 
@@ -215,6 +223,9 @@ public sealed class AuthController(
     [HttpPost("user/refresh")]
     public async Task<ActionResult<RefreshTokenResponse>> RenewUserAccessToken()
     {
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
         var refreshToken = Request.Cookies["refreshToken"];
 
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -271,7 +282,7 @@ public sealed class AuthController(
         var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
 
-        await CreateUserSession(newRefreshTokenHash, session.UserId.Value);
+        await CreateUserSession(newRefreshTokenHash, session.UserId.Value, userAgent, ipAddress);
 
         SetRefreshTokenInCookie(newRefreshToken);
 
@@ -339,14 +350,32 @@ public sealed class AuthController(
 
 
 
-    private async Task CreateUserSession(string refreshTokenHash, Guid userId)
+    private async Task CreateUserSession(string refreshTokenHash, Guid userId, string userAgent, string? ipAddress)
     {
         var session = new Session(
             refreshTokenHash,
             null,
             userId,
             false,
-            DateTime.UtcNow.AddDays(30)
+            DateTime.UtcNow.AddDays(30),
+            userAgent,
+            ipAddress
+        );
+
+        await sessionRepo.CreateSession(session);
+    }
+
+
+    private async Task CreateAdminSession(string refreshTokenHash, Guid adminId, string userAgent, string? ipAddress)
+    {
+        var session = new Session(
+            refreshTokenHash,
+            adminId,
+            null,
+            true,
+            DateTime.UtcNow.AddDays(30),
+            userAgent,
+            ipAddress
         );
 
         await sessionRepo.CreateSession(session);
@@ -364,20 +393,6 @@ public sealed class AuthController(
         return;
 
     }
-
-    private async Task CreateAdminSession(string refreshTokenHash, Guid adminId)
-    {
-        var session = new Session(
-            refreshTokenHash,
-            adminId,
-            null,
-            true,
-            DateTime.UtcNow.AddDays(30)
-        );
-
-        await sessionRepo.CreateSession(session);
-    }
-
     private void SetRefreshTokenInCookie(string refreshToken)
     {
         Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
