@@ -30,8 +30,8 @@ public class TicketMessageRepo(AppDbContext db) : ITicketMessageRepository
     public async Task<bool> DeleteMessage(Guid messageId, Guid senderId)
     {
         var message = await _db.TicketMessages
-        .FirstOrDefaultAsync(
-            s => s.Id == messageId &&
+        .FirstOrDefaultAsync(s =>
+            s.Id == messageId &&
             s.SenderId == senderId);
 
         if (message is null)

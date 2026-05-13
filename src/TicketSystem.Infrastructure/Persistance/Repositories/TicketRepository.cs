@@ -51,8 +51,8 @@ public class TicketRepo(AppDbContext db) : ITicketRepository
     public async Task<bool> AssignTicketToAdmin(Guid ticketId, Guid adminId)
     {
         var ticket = await _db.Tickets
-        .FirstOrDefaultAsync(
-            s => s.Id == ticketId &&
+        .FirstOrDefaultAsync(s =>
+            s.Id == ticketId &&
             s.AdminId == null);
 
         if (ticket is null)
@@ -71,8 +71,8 @@ public class TicketRepo(AppDbContext db) : ITicketRepository
     public async Task<bool> ChangeStatusOfSolveToTrue(Guid ticketId, Guid adminId)
     {
         var ticket = await _db.Tickets
-        .FirstOrDefaultAsync(
-            s => s.Id == ticketId &&
+        .FirstOrDefaultAsync(s =>
+            s.Id == ticketId &&
             s.AdminId == adminId);
 
         if (ticket is null)
