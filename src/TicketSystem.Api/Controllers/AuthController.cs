@@ -141,9 +141,9 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             return ValidationProblem(ModelState);
         }
 
-        var RefreshTokenHash = refreshTokenHasher.Hash(dto.RefreshToken);
+        var refreshTokenHash = refreshTokenHasher.Hash(dto.RefreshToken);
 
-        var session = await sessionRepo.GetSessionByHashToken(RefreshTokenHash);
+        var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
         if (session is null)
         {
@@ -153,7 +153,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             });
         }
 
-        if (session.AdminId is null)
+        if (session.AdminId is null || !session.IsAdmin)
         {
             return Unauthorized(new
             {
@@ -203,9 +203,9 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             return ValidationProblem(ModelState);
         }
 
-        var RefreshTokenHash = refreshTokenHasher.Hash(dto.RefreshToken);
+        var refreshTokenHash = refreshTokenHasher.Hash(dto.RefreshToken);
 
-        var session = await sessionRepo.GetSessionByHashToken(RefreshTokenHash);
+        var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
         if (session is null)
         {
@@ -215,7 +215,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
             });
         }
 
-        if (session.UserId is null)
+        if (session.UserId is null || session.IsAdmin)
         {
             return Unauthorized(new
             {
@@ -247,7 +247,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
 
-        await CreateAdminSession(newRefreshTokenHash, session.UserId.Value);
+        await CreateUserSession(newRefreshTokenHash, session.UserId.Value);
 
         return Ok(new RefreshTokenResponse
         {
