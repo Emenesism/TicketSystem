@@ -185,7 +185,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
 
-        await CreateAdminSession(newRefreshTokenHash, session.AdminId.Value);
+        await CreateAdminSession(newRefreshToken, session.AdminId.Value);
 
         return Ok(new RefreshTokenResponse
         {
@@ -247,7 +247,7 @@ public sealed class AuthController(IUserRepository userRepository, IAdminReposit
         var newRefreshToken = refreshTokenGenerator.GenerateRefreshToken();
         var newRefreshTokenHash = refreshTokenHasher.Hash(newRefreshToken);
 
-        await CreateUserSession(newRefreshTokenHash, session.UserId.Value);
+        await CreateUserSession(newRefreshToken, session.UserId.Value);
 
         return Ok(new RefreshTokenResponse
         {
