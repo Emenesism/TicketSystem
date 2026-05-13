@@ -468,7 +468,13 @@
             const endpoint = currentRole === 'user' ? '/auth/user/login' : '/auth/admin/login';
             
             try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                const response = await apiRequest(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, username, password }),
+                });
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -528,7 +534,61 @@
             fetchAllUsers();
         }
 
-        function logout() {
+        let refreshInProgress = false;
+
+async function refreshAccessToken() {
+    if (refreshInProgress) return;
+    refreshInProgress = true;
+    try {
+        const endpoint = currentRole === 'admin' ? '/auth/admin/refresh' : '/auth/user/refresh';
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { method: 'POST', credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            currentToken = data.AccessToken || data.accessToken || '';
+        } else {
+            // If refresh fails, logout user
+            logout();
+        }
+    } catch (e) {
+        console.error('Refresh token error', e);
+        logout();
+    } finally {
+        refreshInProgress = false;
+    }
+}
+
+async function apiRequest(endpoint, options = {}) {
+    const headers = options.headers || {};
+    if (currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`;
+    }
+    options.headers = headers;
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    if (response.status === 401) {
+        await refreshAccessToken();
+        // Retry once
+        if (currentToken) {
+            headers['Authorization'] = `Bearer ${currentToken}`;
+            options.headers = headers;
+            return await fetch(`${API_BASE_URL}${endpoint}`, options);
+        }
+    }
+    return response;
+}
+    // Call backend to revoke session and clear refresh token cookie
+    fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' })
+        .finally(() => {
+            // Reset UI state
+            loginWrapper.style.display = 'flex';
+            loginScreen.style.display = 'block';
+            profileScreen.style.display = 'none';
+            adminLayout.style.display = 'none';
+            authForm.reset();
+            currentToken = '';
+            currentUserId = '';
+            switchTab('user');
+        });
+}
             loginWrapper.style.display = 'flex';
             loginScreen.style.display = 'block';
             profileScreen.style.display = 'none';
@@ -753,7 +813,27 @@
             } catch (err) { chatMessages.innerHTML = 'Error loading messages.'; }
         }
 
-        function renderMessages(messages) {
+                function renderMessages(messages) {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                const isSentByMe = msg.senderId === currentUserId;
+                const isAdminMsg = !isSentByMe && currentRole === 'admin';
+                const classes = ['message'];
+                if (isSentByMe) classes.push('sent');
+                else if (isAdminMsg) classes.push('admin');
+                else classes.push('received');
+                div.className = classes.join(' ');
+                div.innerHTML = `
+                    ${msg.content}
+                    ${isSentByMe ? `<div class="delete-msg" onclick="deleteMessage('${msg.id}')">✖</div>` : ''}
+                `;
+                chatMessages.appendChild(div);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
             const chatMessages = document.getElementById('chatMessages');
             chatMessages.innerHTML = '';
             
