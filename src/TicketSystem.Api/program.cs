@@ -1,14 +1,12 @@
-
-using Microsoft.EntityFrameworkCore;
-using TicketSystem.Application.Common.Interface;
-using TicketSystem.Infrastructure.Security;
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using TicketSystem.Infrastructure.Persistance.Configuration;
+using System.Text;
 using TicketSystem.Application.Abstractions.Repositories;
+using TicketSystem.Application.Common.Interface;
+using TicketSystem.Infrastructure.Persistance.Configuration;
 using TicketSystem.Infrastructure.Persistance.Repositories;
-
+using TicketSystem.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +27,20 @@ builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<ISessionRepo, SessionRepo>();
 builder.Services.AddScoped<IRefreshTokenHasher, RefreshTokenHasher>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://127.0.0.1:8080",
+                "http://localhost:8080"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 var jwt = builder.Configuration.GetSection("Jwt");
 
@@ -45,6 +57,7 @@ builder.Services
 
             ValidIssuer = jwt["Issuer"],
             ValidAudience = jwt["Audience"],
+
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwt["Key"]!)
             ),
@@ -54,28 +67,21 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddCors(options =>
-{
-    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:8080", "http://127.0.0.1:8080"];
-    options.AddPolicy("Frontend", policy =>
-    {
-        policy
-          .WithOrigins("http://127.0.0.1:8080")
-          .AllowAnyHeader()
-          .AllowCredentials()
-          .AllowAnyMethod();
-    });
-});
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseRouting();
+
 app.UseCors("Frontend");
+
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
+
 await app.ApplyAllMigrateAsync();
 
 app.Run();

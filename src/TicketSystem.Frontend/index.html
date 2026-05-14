@@ -1449,7 +1449,7 @@
             let refreshInProgress = false;
 
             async function refreshAccessToken() {
-                if (refreshInProgress) return;
+                if (refreshInProgress) return false;
                 refreshInProgress = true;
                 try {
                     const endpoint =
@@ -1460,21 +1460,19 @@
                         method: "POST",
                         credentials: "include",
                     });
+
                     if (response.ok) {
                         const data = await response.json();
-                        currentToken =
-                            data.AccessToken || data.accessToken || "";
+                        currentToken = data.AccessToken || data.accessToken || data.token || "";
                         localStorage.setItem(TOKEN_KEY, currentToken);
-                    } else {
-                        // If refresh fails, logout user
-                        logout();
+                        refreshInProgress = false;
+                        return true;
                     }
-                } catch (e) {
-                    console.error("Refresh token error", e);
-                    logout();
-                } finally {
-                    refreshInProgress = false;
+                } catch (err) {
+                    console.error("Refresh failed:", err);
                 }
+                refreshInProgress = false;
+                return false;
             }
 
             async function apiRequest(endpoint, options = {}) {
@@ -1488,15 +1486,18 @@
                     options,
                 );
                 if (response.status === 401) {
-                    await refreshAccessToken();
-                    // Retry once
-                    if (currentToken) {
+                    const success = await refreshAccessToken();
+                    if (success) {
                         headers["Authorization"] = `Bearer ${currentToken}`;
                         options.headers = headers;
                         return await fetch(
                             `${API_BASE_URL}${endpoint}`,
                             options,
                         );
+                    } else {
+                        console.log("Session expired. Redirecting to login...");
+                        logout();
+                        return null;
                     }
                 }
                 return response;
