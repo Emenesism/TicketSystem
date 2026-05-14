@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TicketSystem.Application.Abstractions.Repositories;
+using TicketSystem.Application.Common.Exceptions;
 using TicketSystem.Application.Dtos.Users;
 
 namespace TicketSystem.Api.Controllers;
@@ -33,10 +34,11 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
 
         if (userFromDb is null)
         {
-            return NotFound(new
-            {
-                message = $"User With Username {username} Not Found"
-            });
+            throw new NotFoundException($"User With Username {username} Not Found");
+            // return NotFound(new
+            // {
+            //     message = $"User With Username {username} Not Found"
+            // });
         }
 
         return Ok(new GetUserResponse
@@ -55,10 +57,12 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
 
         if (userFromDb is null)
         {
-            return NotFound(new
-            {
-                message = $"User With Name {name} Not Found"
-            });
+            throw new NotFoundException($"User With name {name} Not Found");
+
+            // return NotFound(new
+            // {
+            //     message = $"User With Name {name} Not Found"
+            // });
         }
 
         return Ok(new GetUserResponse
@@ -79,10 +83,12 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
 
         if (usersFromDb is null)
         {
-            return NotFound(new
-            {
-                Message = $"No User Exist Before date {date}"
-            });
+            throw new NotFoundException("$No User Exist Before date { date }");
+
+            // return NotFound(new
+            // {
+            //     Message = $"No User Exist Before date {date}"
+            // });
         }
 
         var result = usersFromDb.Select(s => new GetUserResponse
@@ -103,10 +109,11 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
 
         if (usersFromDb is null)
         {
-            return NotFound(new
-            {
-                Message = $"No User Exist After date {date}"
-            });
+            throw new NotFoundException($"No User Exist After date {date}");
+            // return NotFound(new
+            // {
+            //     Message = $"No User Exist After date {date}"
+            // });
         }
 
         var result = usersFromDb.Select(s => new GetUserResponse

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using TicketSystem.Application.Dtos.Messages;
 using System.Security.Claims;
 using TicketSystem.Application.Dtos.Tickets;
+using TicketSystem.Application.Common.Exceptions;
 
 
 [ApiController]
@@ -73,10 +74,11 @@ public class MessageController(ITicketMessageRepository messageRepository) : Con
 
         if (!status)
         {
-            return NotFound(new
-            {
-                message = "The Message Is Not Found Or You Delete Another Person Message"
-            });
+            throw new NotFoundException("The Message Is Not Found Or You Delete Another Person Message");
+            // return NotFound(new
+            // {
+            //     message = "The Message Is Not Found Or You Delete Another Person Message"
+            // });
         }
 
         return Ok(new

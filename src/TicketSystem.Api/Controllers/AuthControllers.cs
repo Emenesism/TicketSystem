@@ -7,6 +7,7 @@ using TicketSystem.Domain.Entities;
 using TicketSystem.Application.Dtos.Auth;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using TicketSystem.Application.Common.Exceptions;
 
 namespace TicketSystem.Api.Controllers;
 
@@ -63,7 +64,8 @@ public sealed class AuthController(
 
         if (!isValidPassword)
         {
-            return Unauthorized(new { Message = "Invalid Username Or Password." });
+            throw new UnauthorizedException("Invalid Username Or Password.");
+            // return Unauthorized(new { Message = "Invalid Username Or Password." });
         }
 
         var token = jwtTokenService.GenerateUserToken(userFromDb);
@@ -127,7 +129,8 @@ public sealed class AuthController(
 
         if (!isValid)
         {
-            return Unauthorized(new { Message = "Password Or Username Is Wrong." });
+            throw new UnauthorizedException("Password Or Username Is Wrong.");
+            // return Unauthorized(new { Message = "Password Or Username Is Wrong." });
         }
 
         var token = jwtTokenService.GenerateAdminToken(adminFromDb);
@@ -156,10 +159,11 @@ public sealed class AuthController(
 
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            return Unauthorized(new
-            {
-                message = "Refresh Token Is Missing."
-            });
+            throw new UnauthorizedException("Refresh Token Is Missing.");
+            // return Unauthorized(new
+            // {
+            //     message = "Refresh Token Is Missing."
+            // });
         }
 
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
@@ -175,28 +179,31 @@ public sealed class AuthController(
 
         if (session is null)
         {
-            return Unauthorized(new
-            {
-                message = "Refresh Token Is Not Valid."
-            });
+            throw new UnauthorizedException("Refresh Token Is Not Valid.");
+            // return Unauthorized(new
+            // {
+            // message = "Refresh Token Is Not Valid."
+            // });
         }
 
         if (session.AdminId is null || !session.IsAdmin)
         {
-            return Unauthorized(new
-            {
-                message = "You Are In Wrong Place Dude."
-            });
+            throw new UnauthorizedException("You Are In Wrong Place Dude");
+            // return Unauthorized(new
+            // {
+            //     message = "You Are In Wrong Place Dude."
+            // });
         }
 
         var adminFromDb = await adminRepository.GetAdminById(session.AdminId.Value);
 
         if (adminFromDb is null)
         {
-            return Unauthorized(new
-            {
-                message = "You Are In Wrong Place Dude."
-            });
+            throw new UnauthorizedException("You Are In Wrong Place Dude");
+            // return Unauthorized(new
+            // {
+            //     message = "You Are In Wrong Place Dude."
+            // });
         }
 
 
@@ -204,10 +211,11 @@ public sealed class AuthController(
 
         if (!revokeStatus)
         {
-            return Unauthorized(new
-            {
-                message = "Failed To Revoke Old Session."
-            });
+            throw new UnauthorizedException("You Are In Wrong Place Dude");
+            // return Unauthorized(new
+            // {
+            //     message = "Failed To Revoke Old Session."
+            // });
         }
 
         var newAccessToken = jwtTokenService.GenerateAdminToken(adminFromDb);
@@ -235,10 +243,11 @@ public sealed class AuthController(
 
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            return Unauthorized(new
-            {
-                message = "Refresh Token Is Missing."
-            });
+            throw new UnauthorizedException("Refresh Token Is Missing.");
+            // return Unauthorized(new
+            // {
+            //     message = "Refresh Token Is Missing."
+            // });
         }
 
         var refreshTokenHash = refreshTokenHasher.Hash(refreshToken);
@@ -247,45 +256,50 @@ public sealed class AuthController(
 
         if (status)
         {
-            return Unauthorized();
+            throw new UnauthorizedException("You Are In Wrong Place Dude");
+            // return Unauthorized();
         }
 
         var session = await sessionRepo.GetSessionByHashToken(refreshTokenHash);
 
         if (session is null)
         {
-            return Unauthorized(new
-            {
-                message = "Refresh Token Is Not Valid."
-            });
+            throw new UnauthorizedException("Refresh Token Is Not Valid.");
+            // return Unauthorized(new
+            // {
+            //     message = "Refresh Token Is Not Valid."
+            // });
         }
 
         if (session.UserId is null || session.IsAdmin)
         {
-            return Unauthorized(new
-            {
-                message = "You Are In Wrong Place Dude."
-            });
+            throw new UnauthorizedException("You Are In Wrong Place Dude");
+            // return Unauthorized(new
+            // {
+            //     message = "You Are In Wrong Place Dude."
+            // });
         }
 
         var userFromDb = await userRepository.GetUserById(session.UserId.Value);
 
         if (userFromDb is null)
         {
-            return Unauthorized(new
-            {
-                message = "You Are In Wrong Place Dude."
-            });
+            throw new UnauthorizedException("You Are In Wrong Place Dude");
+            // return Unauthorized(new
+            // {
+            //     message = "You Are In Wrong Place Dude."
+            // });
         }
 
         var revokeStatus = await sessionRepo.RevokeSession(session.Id);
 
         if (!revokeStatus)
         {
-            return Unauthorized(new
-            {
-                message = "Failed To Revoke Old Session."
-            });
+            throw new UnauthorizedException("Faild To Revoke Old Session.");
+            // return Unauthorized(new
+            // {
+            //     message = "Failed To Revoke Old Session."
+            // });
         }
 
         var newAccessToken = jwtTokenService.GenerateUserToken(userFromDb);

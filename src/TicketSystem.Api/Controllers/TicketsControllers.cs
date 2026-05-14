@@ -4,6 +4,7 @@ using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using TicketSystem.Application.Common.Exceptions;
 
 
 [ApiController]
@@ -87,10 +88,12 @@ public class TicketController(ITicketRepository ticketRepository) : ControllerBa
 
         if (!status)
         {
-            return NotFound(new
-            {
-                message = "The Ticket You Want To Solve Not Found Or You Are Not Assigned Admin For This Ticket"
-            });
+            throw new NotFoundException("The Message Is Not Found Or You Delete Another Person Message");
+
+            // return NotFound(new
+            // {
+            //     message = "The Ticket You Want To Solve Not Found Or You Are Not Assigned Admin For This Ticket"
+            // });
         }
 
         return Ok(new
@@ -111,10 +114,12 @@ public class TicketController(ITicketRepository ticketRepository) : ControllerBa
         var status = await ticketRepository.AssignTicketToAdmin(dto.TicketId, adminId);
         if (!status)
         {
-            return NotFound(new
-            {
-                message = "The Ticket That You Want To Assign Not Found Or Assinged In The Past"
-            });
+            throw new NotFoundException("The Ticket That You Want To Assign Not Found Or Assinged In The Past");
+
+            // return NotFound(new
+            // {
+            //     message = "The Ticket That You Want To Assign Not Found Or Assinged In The Past"
+            // });
         }
 
         return Ok(new
