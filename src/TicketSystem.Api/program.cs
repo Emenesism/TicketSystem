@@ -8,7 +8,6 @@ using TicketSystem.Infrastructure.Persistance.Configuration;
 using TicketSystem.Infrastructure.Persistance.Repositories;
 using TicketSystem.Infrastructure.Security;
 using TicketSystem.Api.Middleware;
-using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,7 +73,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseMiddleware<ExceptionHandlerMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseRouting();
 
