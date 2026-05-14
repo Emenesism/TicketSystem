@@ -2,6 +2,7 @@ using TicketSystem.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using TicketSystem.Infrastructure.Persistance.Configuration;
 using TicketSystem.Application.Abstractions.Repositories;
+using TicketSystem.Application.Dtos.Dashboard;
 
 public class SessionRepo(AppDbContext db) : ISessionRepo
 {
@@ -111,5 +112,27 @@ public class SessionRepo(AppDbContext db) : ISessionRepo
             s.TokenHash == tokenHash &&
             s.RevokeAt != null);
 
+    }
+
+    public async Task<List<AllSessionResponse>> GetActiveSessionForDashboard()
+    {
+        var now = DateTime.UtcNow;
+        return await _db.Sessions
+        .AsNoTracking()
+        .Where(s =>
+            s.RevokeAt == null &&
+            s.ExpiresAt > now)
+        .Select(s => new AllSessionResponse
+        {
+            Id = s.Id,
+            UserAgent = s.UserAgent,
+            IpAddress = s.IpAddress,
+            CreatedAt = s.CreatedAt,
+            LastTimeUsed = s.LastUsageAt,
+            ExpiresAt = s.ExpiresAt,
+            AdminId = s.AdminId,
+            UserId = s.UserId,
+            IsAdmin = s.IsAdmin
+        }).ToListAsync();
     }
 }
