@@ -7,4 +7,6 @@ public class CreateAdminReponse
     public string Username { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public List<string> Roles { get; set; } = [];
+    public bool IsSuperAdmin { get; set; }
 }

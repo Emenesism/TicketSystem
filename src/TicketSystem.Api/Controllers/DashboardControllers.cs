@@ -9,7 +9,7 @@ namespace TicketSystem.Api.Controllers;
 
 [ApiController]
 [Route("dashboard")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "SuperAdmin")]
 public class DashboardController(ISessionRepo sessionRepo) : ControllerBase
 {
     [HttpGet]

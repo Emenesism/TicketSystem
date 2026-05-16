@@ -8,6 +8,8 @@ using TicketSystem.Application.Dtos.Auth;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using TicketSystem.Application.Common.Exceptions;
+using System.Text.Json;
+using System.Collections.Generic;
 
 namespace TicketSystem.Api.Controllers;
 
@@ -40,6 +42,7 @@ public sealed class AuthController(
         if (userFromDb is null)
         {
             var passwordHash = passwordHasher.Hash(dto.Password);
+            Console.WriteLine(passwordHash);
             var newUser = new User(dto.Name, dto.Username, passwordHash);
 
             await userRepository.CreateUser(newUser);
@@ -85,7 +88,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("admin/login")]
-    public async Task<ActionResult<CreateAdminReponse>> LoginOrRegisterAdmin([FromBody] CreateAdminDto dto)
+    public async Task<ActionResult<CreateAdminReponse>> LoginAdmin([FromBody] LoginAdminDto dto)
     {
         if (!ModelState.IsValid)
         {
@@ -101,28 +104,7 @@ public sealed class AuthController(
 
         if (adminFromDb is null)
         {
-            var passwordHash = passwordHasher.Hash(dto.Password);
-
-            var admin = new Admin(dto.Name, dto.Username, passwordHash);
-
-            await adminRepository.CreateAdmin(admin);
-
-            var createdToken = jwtTokenService.GenerateAdminToken(admin);
-
-
-            await CreateAdminSession(createdRefreshTokenHash, admin.Id, userAgent, ipAddress);
-
-            SetRefreshTokenInCookie(createdRefreshToken);
-
-            return Ok(new CreateAdminReponse
-            {
-                Id = admin.Id,
-                Name = admin.Name,
-                Username = admin.Username,
-                Token = createdToken,
-                CreatedAt = admin.CreatedAt
-            });
-
+            throw new UnauthorizedException("Password Or Username Is Wrong");
         }
 
         var isValid = passwordHasher.Verify(adminFromDb.PasswordHash, dto.Password);
@@ -145,7 +127,9 @@ public sealed class AuthController(
             Name = adminFromDb.Name,
             Username = adminFromDb.Username,
             Token = token,
-            CreatedAt = adminFromDb.CreatedAt
+            CreatedAt = adminFromDb.CreatedAt,
+            Roles = adminFromDb.GetRoles(),
+            IsSuperAdmin = adminFromDb.IsSuperAdmin
         });
     }
 
@@ -372,6 +356,32 @@ public sealed class AuthController(
 
     }
 
+    [HttpPost("admin/create")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<ActionResult> CreateAdmin(CreateAdminDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var passwordHash = passwordHasher.Hash(dto.Password);
+
+
+        var admin = new Admin(
+            dto.Name,
+            dto.Username,
+            passwordHash,
+            dto.IsSuperAdmin
+        );
+
+        admin.StoreRoles(dto.Roles);
+
+        await adminRepository.CreateAdmin(admin);
+
+        return Ok(new { message = "ok done" });
+    }
+
 
 
 
@@ -445,5 +455,8 @@ public sealed class AuthController(
 
         });
     }
+
+
+
 
 }

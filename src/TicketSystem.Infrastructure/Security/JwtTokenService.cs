@@ -19,7 +19,8 @@ public sealed class JwtTokenService(IConfiguration config) : IJwtTokenService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, "User")
+            new Claim(ClaimTypes.Role, "User"),
+
         };
 
         return GenerateToken(claims);
@@ -27,13 +28,23 @@ public sealed class JwtTokenService(IConfiguration config) : IJwtTokenService
 
     public string GenerateAdminToken(Admin admin)
     {
-        var claims = new[]
+        var roles = admin.GetRoles();
+
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, admin.Id.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
-            new Claim(ClaimTypes.Name, admin.Username),
-            new Claim(ClaimTypes.Role, "Admin")
+            new (JwtRegisteredClaimNames.Sub, admin.Id.ToString()),
+            new (ClaimTypes.NameIdentifier, admin.Id.ToString()),
+            new (ClaimTypes.Name, admin.Username),
+            new (ClaimTypes.Role, "Admin")
         };
+
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+        if (admin.IsSuperAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "SuperAdmin"));
+        }
+
 
         return GenerateToken(claims);
     }

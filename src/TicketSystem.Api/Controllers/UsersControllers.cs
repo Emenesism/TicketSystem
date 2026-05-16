@@ -9,7 +9,7 @@ namespace TicketSystem.Api.Controllers;
 
 [ApiController]
 [Route("users")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "UserAccess")]
 public sealed class UserController(IUserRepository userRepository) : ControllerBase
 {
     [HttpGet("all")]

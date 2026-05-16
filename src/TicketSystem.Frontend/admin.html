@@ -694,7 +694,49 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Create Admin Modal -->
+    <div id="createAdminModal" class="modal">
+        <div class="modal-content animate-fade-in" style="max-width: 500px">
+            <span class="close-modal" onclick="closeModal('createAdminModal')">&times;</span>
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Create New Admin</h2>
+                <p style="color: var(--text-muted);">Add a new system administrator</p>
+            </div>
+            <div class="filter-group" style="margin-bottom: 15px;">
+                <label>Full Name</label>
+                <input type="text" id="adminFullName" placeholder="e.g. Admin User" />
+            </div>
+            <div class="filter-group" style="margin-bottom: 15px;">
+                <label>Username</label>
+                <input type="text" id="adminUsername" placeholder="e.g. admin123" />
+            </div>
+            <div class="filter-group" style="margin-bottom: 15px;">
+                <label>Password</label>
+                <input type="password" id="adminPassword" placeholder="Minimum 8 characters" />
+            </div>
+            <div class="filter-group" style="margin-bottom: 15px;">
+                <label>Roles</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer;">
+                        <input type="checkbox" name="adminRole" value="SuperAdmin" style="width: auto;" onchange="syncSuperAdminCheckbox(this)" /> SuperAdmin
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer;">
+                        <input type="checkbox" name="adminRole" value="UserAccess" style="width: auto;" /> UserAccess
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer;">
+                        <input type="checkbox" name="adminRole" value="Dashboard" checked style="width: auto;" /> Dashboard
+                    </label>
+                </div>
+            </div>
+            <div class="filter-group" style="display: none; flex-direction: row; align-items: center; gap: 10px; margin-top: 10px;">
+                <input type="checkbox" id="adminIsSuper" style="width: auto;" />
+                <label style="margin-bottom: 0;">Is SuperAdmin?</label>
+            </div>
+            <button class="btn btn-primary" onclick="submitCreateAdmin()" style="margin-top: 25px; width: 100%;">
+                Create Administrator
+            </button>
+        </div>
+    </div>
     <aside class="sidebar">
         <div class="logo">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="2"
@@ -741,6 +783,19 @@
                     <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
                 Tickets
+            </li>
+            <li class="nav-item" id="navAdmins" onclick="switchAdminTab('admins')" style="display: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                Manage Admins
+            </li>
+            <li class="nav-item" id="navDashboard" onclick="switchAdminTab('dashboard')" style="display: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18" />
+                    <path d="M18 9l-6 6-3-3-6 6" />
+                </svg>
+                System Dashboard
             </li>
         </ul>
 
@@ -855,6 +910,63 @@
                 <!-- Tickets will be loaded here -->
             </div>
         </div>
+
+        <!-- Manage Admins View -->
+        <div id="adminsView" style="display: none">
+            <div class="filters" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 1.2rem; font-weight: 600;">System Administrators</h2>
+                <button class="btn btn-primary" onclick="openCreateAdminModal()" style="flex: 0 0 auto">
+                    + Create New Admin
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Admin</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminsTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                Click "Create New Admin" to add a new system administrator.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- System Dashboard View -->
+        <div id="dashboardView" style="display: none">
+            <div class="filters">
+                <h2 style="font-size: 1.2rem; font-weight: 600;">Active System Sessions</h2>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>User Agent</th>
+                            <th>User Type</th>
+                            <th>Last Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionsTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                Loading active sessions...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -894,25 +1006,184 @@
         function switchAdminTab(tab) {
             const usersView = document.getElementById("usersView");
             const ticketsView = document.getElementById("ticketsView");
+            const adminsView = document.getElementById("adminsView");
+            const dashboardView = document.getElementById("dashboardView");
             const navUsers = document.getElementById("navUsers");
             const navTickets = document.getElementById("navTickets");
+            const navAdmins = document.getElementById("navAdmins");
+            const navDashboard = document.getElementById("navDashboard");
             const viewTitle = document.getElementById("viewTitle");
             const viewSubtitle = document.getElementById("viewSubtitle");
 
             usersView.style.display = tab === "users" ? "block" : "none";
             ticketsView.style.display = tab === "tickets" ? "block" : "none";
+            adminsView.style.display = tab === "admins" ? "block" : "none";
+            dashboardView.style.display = tab === "dashboard" ? "block" : "none";
 
             navUsers.classList.toggle("active", tab === "users");
             navTickets.classList.toggle("active", tab === "tickets");
+            navAdmins.classList.toggle("active", tab === "admins");
+            navDashboard.classList.toggle("active", tab === "dashboard");
 
             if (tab === "users") {
                 viewTitle.textContent = "Users Directory";
                 viewSubtitle.textContent = "Manage users and system settings";
                 fetchAllUsers();
-            } else {
+            } else if (tab === "tickets") {
                 viewTitle.textContent = "Support Tickets";
                 viewSubtitle.textContent = "Manage and resolve customer requests";
                 loadUnassignedTickets();
+            } else if (tab === "admins") {
+                viewTitle.textContent = "System Administrators";
+                viewSubtitle.textContent = "Manage system access and roles";
+                fetchAllAdmins();
+            } else {
+                viewTitle.textContent = "System Dashboard";
+                viewSubtitle.textContent = "Monitor active system sessions";
+                fetchAllSessions();
+            }
+        }
+
+        async function fetchAllSessions() {
+            const tableBody = document.getElementById("sessionsTableBody");
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div></td></tr>';
+
+            try {
+                const response = await apiRequest("/dashboard", { method: "GET" });
+                if (response && response.ok) {
+                    const sessions = await response.json();
+                    renderSessions(sessions);
+                }
+            } catch (err) {
+                console.error("Failed to fetch sessions", err);
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--error);">Error loading sessions.</td></tr>';
+            }
+        }
+
+        function renderSessions(sessions) {
+            const tableBody = document.getElementById("sessionsTableBody");
+            tableBody.innerHTML = "";
+
+            if (!sessions || sessions.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No active sessions found.</td></tr>';
+                return;
+            }
+
+            sessions.forEach((session) => {
+                const tr = document.createElement("tr");
+                const lastUsed = new Date(session.lastTimeUsed || session.LastTimeUsed).toLocaleString();
+                const isAdmin = session.isAdmin || session.IsAdmin;
+                const ua = session.userAgent || session.UserAgent || "Unknown Device";
+
+                tr.innerHTML = `
+                <td style="font-family: monospace;">${session.ipAddress || session.IpAddress || "?.?.?.?"}</td>
+                <td title="${ua}" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ua}</td>
+                <td><span class="status-tag ${isAdmin ? "status-solved" : "status-open"}">${isAdmin ? "Admin" : "User"}</span></td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">${lastUsed}</td>
+            `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        async function fetchAllAdmins() {
+            const tableBody = document.getElementById("adminsTableBody");
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div></td></tr>';
+
+            try {
+                const response = await apiRequest("/admin/all", { method: "GET" });
+                if (response && response.ok) {
+                    const admins = await response.json();
+                    renderAdmins(admins);
+                }
+            } catch (err) {
+                console.error("Failed to fetch admins", err);
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--error);">Error loading admins.</td></tr>';
+            }
+        }
+
+        function renderAdmins(admins) {
+            const tableBody = document.getElementById("adminsTableBody");
+            tableBody.innerHTML = "";
+
+            if (!admins || admins.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No admins found.</td></tr>';
+                return;
+            }
+
+            admins.forEach((admin) => {
+                const tr = document.createElement("tr");
+                const initial = (admin.name || admin.Name || "A").charAt(0).toUpperCase();
+                const isSuper = admin.isSuperAdmin || admin.IsSuperAdmin;
+
+                tr.innerHTML = `
+                <td><div class="user-cell"><div class="avatar-small" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">${initial}</div><div style="font-weight: 600;">${admin.name || admin.Name}</div></div></td>
+                <td><span class="username-badge">@${admin.username || admin.Username}</span></td>
+                <td><span class="status-tag ${isSuper ? "status-solved" : "status-open"}" style="font-size: 0.7rem;">${isSuper ? "SuperAdmin" : "Admin"}</span></td>
+                <td><span style="color: var(--success); font-size: 0.85rem;">● Active</span></td>
+            `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function syncSuperAdminCheckbox(cb) {
+            document.getElementById("adminIsSuper").checked = cb.checked;
+        }
+
+        function openCreateAdminModal() {
+            document.getElementById("adminFullName").value = "";
+            document.getElementById("adminUsername").value = "";
+            document.getElementById("adminPassword").value = "";
+            document.getElementById("adminIsSuper").checked = false;
+            document.querySelectorAll('input[name="adminRole"]').forEach(cb => cb.checked = cb.value === "Dashboard");
+            openModal("createAdminModal");
+        }
+
+        async function submitCreateAdmin() {
+            const name = document.getElementById("adminFullName").value.trim();
+            const username = document.getElementById("adminUsername").value.trim();
+            const password = document.getElementById("adminPassword").value;
+
+            const selectedRoles = Array.from(document.querySelectorAll('input[name="adminRole"]:checked'))
+                .map(cb => cb.value);
+
+            const isSuperAdmin = selectedRoles.includes("SuperAdmin");
+
+            if (!selectedRoles.includes("Admin")) {
+                selectedRoles.push("Admin");
+            }
+
+            if (!name || !username || !password) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            if (selectedRoles.length === 0) {
+                alert("Please select at least one role.");
+                return;
+            }
+
+            try {
+                const response = await apiRequest("/auth/admin/create", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        name,
+                        username,
+                        password,
+                        isSuperAdmin,
+                        roles: selectedRoles
+                    }),
+                });
+
+                if (response.ok) {
+                    alert("Admin created successfully!");
+                    closeModal("createAdminModal");
+                    fetchAllAdmins();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || "Failed to create admin");
+                }
+            } catch (err) {
+                alert("Request failed");
             }
         }
 
@@ -1133,6 +1404,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            const savedData = localStorage.getItem('ts_user_data');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    if (data.isSuperAdmin || data.IsSuperAdmin) {
+                        document.getElementById("navAdmins").style.display = "flex";
+                        document.getElementById("navDashboard").style.display = "flex";
+                    }
+                } catch (e) {}
+            }
             fetchAllUsers();
         });
     </script>
