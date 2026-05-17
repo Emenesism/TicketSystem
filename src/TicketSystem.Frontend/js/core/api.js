@@ -36,6 +36,10 @@ export async function apiRequest(endpoint, options = {}, role = 'user', onLogout
     options.headers = headers;
     options.credentials = 'include';
 
+    if (options.body instanceof FormData) {
+        delete options.headers['Content-Type'];
+    }
+
     let response = await fetch(`${getApiBaseUrl()}${endpoint}`, options);
 
     if (response.status === 401) {
