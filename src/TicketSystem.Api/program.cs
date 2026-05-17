@@ -8,6 +8,8 @@ using TicketSystem.Infrastructure.Persistance.Configuration;
 using TicketSystem.Infrastructure.Persistance.Repositories;
 using TicketSystem.Infrastructure.Security;
 using TicketSystem.Api.Middleware;
+using TicketSystem.Application.Services;
+using TicketSystem.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,13 @@ builder.Services.AddScoped<ITicketMessageRepository, TicketMessageRepo>();
 builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<ISessionRepo, SessionRepo>();
 builder.Services.AddScoped<IRefreshTokenHasher, RefreshTokenHasher>();
+
+var storagePath = builder.Configuration.GetValue<string>("FileStorage:BasePath") ?? "uploads";
+if (!Path.IsPathRooted(storagePath))
+{
+    storagePath = Path.Combine(builder.Environment.ContentRootPath, storagePath);
+}
+builder.Services.AddSingleton<IFileStorageService>(new FileStorageService(storagePath));
 
 builder.Services.AddCors(options =>
 {
