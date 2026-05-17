@@ -4,6 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Dashboard - TicketSystem</title>
+        <link rel="icon" href="data:," />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
             rel="stylesheet"
@@ -236,125 +237,6 @@
             </div>
         </div>
 
-        <script>
-            let API = localStorage.getItem("api_url") || "http://127.0.0.1:5000";
-            let TOKEN = localStorage.getItem("ts_token") || "";
-
-            function clearSessionAndRedirect() {
-                localStorage.removeItem("ts_token");
-                localStorage.removeItem("ts_role");
-                localStorage.removeItem("ts_user_id");
-                localStorage.removeItem("ts_user_data");
-                window.location.href = "index.html";
-            }
-
-            async function refreshAccessToken() {
-                try {
-                    const res = await fetch(`${API}/auth/admin/refresh`, {
-                        method: "POST",
-                        credentials: "include",
-                    });
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        const newToken = data.token || data.Token || "";
-                        if (newToken) {
-                            TOKEN = newToken;
-                            localStorage.setItem("ts_token", newToken);
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    console.error("Refresh failed:", err);
-                }
-                return false;
-            }
-
-            async function authenticatedFetch(url, options = {}) {
-                if (!options.headers) options.headers = {};
-                options.headers["Authorization"] = TOKEN.startsWith("Bearer")
-                    ? TOKEN
-                    : `Bearer ${TOKEN}`;
-                options.credentials = "include";
-
-                let response = await fetch(url, options);
-
-                if (response.status === 401) {
-                    console.log("Token expired, attempting refresh...");
-                    const success = await refreshAccessToken();
-                    if (success) {
-                        console.log("Refresh successful, retrying request.");
-                        options.headers["Authorization"] = TOKEN.startsWith(
-                            "Bearer",
-                        )
-                            ? TOKEN
-                            : `Bearer ${TOKEN}`;
-                        response = await fetch(url, options);
-                    } else {
-                        console.log("Refresh failed, redirecting to login.");
-                        clearSessionAndRedirect();
-                        return null;
-                    }
-                }
-
-                return response;
-            }
-
-            async function load() {
-                const state = document.getElementById("state");
-                const tbody = document.getElementById("tbody");
-                const errorBar = document.getElementById("errorBar");
-
-                tbody.innerHTML = "";
-                state.innerHTML =
-                    '<div class="spinner"></div><p>Loading sessions…</p>';
-                state.style.display = "block";
-                errorBar.style.display = "none";
-
-                try {
-                    const res = await authenticatedFetch(`${API}/dashboard`);
-
-                    if (!res) return; // Redirected
-
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-                    const sessions = await res.json();
-                    state.style.display = "none";
-
-                    if (!sessions || !sessions.length) {
-                        state.innerHTML = "<p>No active sessions found.</p>";
-                        state.style.display = "block";
-                        return;
-                    }
-
-                    sessions.forEach((s) => {
-                        const tr = document.createElement("tr");
-                        const id = s.isAdmin ? s.adminId : s.userId;
-                        const lastUsed = s.lastTimeUsed
-                            ? new Date(s.lastTimeUsed).toLocaleString()
-                            : "—";
-                        const expiresAt = s.expiresAt
-                            ? new Date(s.expiresAt).toLocaleString()
-                            : "—";
-
-                        tr.innerHTML = `
-                        <td><span class="badge ${s.isAdmin ? "badge-admin" : "badge-user"}">${s.isAdmin ? "ADMIN" : "USER"}</span></td>
-                        <td><code>${id || "—"}</code></td>
-                        <td>${s.ipAddress || "—"}</td>
-                        <td class="muted" title="${s.userAgent}" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.userAgent || "—"}</td>
-                        <td class="muted">${lastUsed}</td>
-                        <td class="muted">${expiresAt}</td>
-                    `;
-                        tbody.appendChild(tr);
-                    });
-                } catch (err) {
-                    state.style.display = "none";
-                    errorBar.textContent = `Failed to load sessions: ${err.message}`;
-                    errorBar.style.display = "block";
-                }
-            }
-
-            document.addEventListener("DOMContentLoaded", load);
-        </script>
+        <script type="module" src="js/pages/dashboard.js"></script>
     </body>
 </html>
