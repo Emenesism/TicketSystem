@@ -8,5 +8,13 @@ public interface ITicketMessageRepository
 
     Task<List<TicketMessage>> GetAllMessageRelatedOfTicket(Guid ticketId);
 
+    Task<TicketMessage?> GetMessageById(Guid messageId);
+
+    Task CreateAttachment(Attachment attachment);
+
+    Task<Attachment?> GetAttachmentById(Guid attachmentId);
+
+    Task DeleteAttachment(Attachment attachment);
+
     Task<bool> DeleteMessage(Guid messageId, Guid senderId);
 }
