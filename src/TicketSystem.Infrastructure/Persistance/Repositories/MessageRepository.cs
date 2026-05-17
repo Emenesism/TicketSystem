@@ -26,6 +26,32 @@ public class TicketMessageRepo(AppDbContext db) : ITicketMessageRepository
         .ToListAsync();
     }
 
+    public async Task<TicketMessage?> GetMessageById(Guid messageId)
+    {
+        return await _db.TicketMessages
+        .AsNoTracking()
+        .FirstOrDefaultAsync(s => s.Id == messageId);
+    }
+
+    public async Task CreateAttachment(Attachment attachment)
+    {
+        await _db.Attachments.AddAsync(attachment);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<Attachment?> GetAttachmentById(Guid attachmentId)
+    {
+        return await _db.Attachments
+        .Include(s => s.TicketMessage)
+        .FirstOrDefaultAsync(s => s.Id == attachmentId);
+    }
+
+    public async Task DeleteAttachment(Attachment attachment)
+    {
+        _db.Attachments.Remove(attachment);
+        await _db.SaveChangesAsync();
+    }
+
 
     public async Task<bool> DeleteMessage(Guid messageId, Guid senderId)
     {
