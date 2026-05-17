@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TicketSystem.Application.Abstractions.Repositories;
 using TicketSystem.Application.Common.Exceptions;
+using TicketSystem.Application.Dtos.Common;
 using TicketSystem.Application.Dtos.Users;
 
 namespace TicketSystem.Api.Controllers;
@@ -13,18 +14,34 @@ namespace TicketSystem.Api.Controllers;
 public sealed class UserController(IUserRepository userRepository) : ControllerBase
 {
     [HttpGet("all")]
-    public async Task<ActionResult<List<GetUserResponse>>> GetAllUsers()
+    public async Task<ActionResult<PaginatedResponse<GetUserResponse>>> GetAllUsers([FromQuery] PaginationDto dto)
     {
-        var usersFromDb = await userRepository.GetUsersAsync();
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+        var usersFromDb = await userRepository.GetUsersAsync(dto.Page, dto.Limit);
+
+        var totalCount = await userRepository.GetTotalUserCount();
+
+        var totalPage = (int)Math.Ceiling(totalCount / (double)dto.Limit);
 
         var result = usersFromDb.Select(s => new GetUserResponse
         {
             Name = s.Name,
             Username = s.Username,
             CreatedAt = s.CreatedAt
+        }).ToList();
+
+        return Ok(new PaginatedResponse<GetUserResponse>
+        {
+            Items = result,
+            TotalCount = totalCount,
+            TotalPages = totalPage,
+            Page = dto.Page,
+            Limit = dto.Limit
         });
 
-        return Ok(result);
     }
 
     [HttpGet("by-username")]
@@ -74,16 +91,22 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
     }
 
     [HttpGet("before-date")]
-    public async Task<ActionResult<List<GetUserResponse>>> GetUserBeforeCertainDate([FromQuery] DateTime date)
+    public async Task<ActionResult<PaginatedResponse<GetUserResponse>>> GetUserBeforeCertainDate([FromQuery] GetUsersFilterDto dto)
     {
 
-        var utcDate = DateTime.SpecifyKind(date, DateTimeKind.Utc);
-
-        var usersFromDb = await userRepository.GetAllUserBeforeCertianDate(utcDate);
-
-        if (usersFromDb is null)
+        if (!ModelState.IsValid)
         {
-            throw new NotFoundException("$No User Exist Before date { date }");
+            return ValidationProblem(ModelState);
+        }
+        var utcDate = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc);
+
+        var usersFromDb = await userRepository.GetAllUserBeforeCertianDate(utcDate, dto.Page, dto.Limit);
+
+
+
+        if (!usersFromDb.Any())
+        {
+            throw new NotFoundException($"No User Exist Before date {dto.Date}");
 
             // return NotFound(new
             // {
@@ -91,6 +114,9 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
             // });
         }
 
+        var totalCount = await userRepository.GetTotalUserCountBeforeDate(dto.Date);
+        var totalPage = (int)Math.Ceiling(totalCount / (double)dto.Limit);
+
         var result = usersFromDb.Select(s => new GetUserResponse
         {
             Name = s.Name,
@@ -98,24 +124,41 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
             CreatedAt = s.CreatedAt
         }).ToList();
 
-        return Ok(result);
+        return Ok(new PaginatedResponse<GetUserResponse>
+        {
+            Items = result,
+            Page = dto.Page,
+            Limit = dto.Limit,
+            TotalCount = totalCount,
+            TotalPages = totalPage
+        });
+
     }
 
     [HttpGet("after-date")]
-    public async Task<ActionResult<List<GetUserResponse>>> GetUserAfterCertainDate([FromQuery] DateTime date)
+    public async Task<ActionResult<PaginatedResponse<GetUserResponse>>> GetUserAfterCertainDate([FromQuery] GetUsersFilterDto dto)
     {
-        var utcDate = DateTime.SpecifyKind(date, DateTimeKind.Utc);
-        var usersFromDb = await userRepository.GetAllUserAfterCertianDate(utcDate);
 
-        if (usersFromDb is null)
+        if (!ModelState.IsValid)
         {
-            throw new NotFoundException($"No User Exist After date {date}");
+            return ValidationProblem(ModelState);
+        }
+
+        var utcDate = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc);
+        var usersFromDb = await userRepository.GetAllUserAfterCertianDate(utcDate, dto.Page, dto.Limit);
+
+        if (!usersFromDb.Any())
+        {
+            throw new NotFoundException($"No User Exist After date {dto.Date}");
             // return NotFound(new
             // {
             //     Message = $"No User Exist After date {date}"
             // });
         }
 
+        var totalCount = await userRepository.GetTotalUserCountAfterDate(dto.Date);
+        var totalPage = (int)Math.Ceiling(totalCount / (double)dto.Limit);
+
         var result = usersFromDb.Select(s => new GetUserResponse
         {
             Name = s.Name,
@@ -123,7 +166,15 @@ public sealed class UserController(IUserRepository userRepository) : ControllerB
             CreatedAt = s.CreatedAt
         }).ToList();
 
-        return Ok(result);
+        return Ok(new PaginatedResponse<GetUserResponse>
+        {
+            Items = result,
+            Page = dto.Page,
+            Limit = dto.Limit,
+            TotalCount = totalCount,
+            TotalPages = totalPage
+        });
+
     }
 
 }
