@@ -22,10 +22,13 @@ public class UserRepo(AppDbContext db) : IUserRepository
 
     }
 
-    public async Task<List<User>> GetUsersAsync()
+    public async Task<List<User>> GetUsersAsync(int page, int limit)
     {
         return await _db.Users
         .Where(s => s.IsDeleted == false)
+        .OrderBy(s => s.CreatedAt)
+        .Skip((page - 1) * limit)
+        .Take(limit)
         .ToListAsync();
     }
 
@@ -35,21 +38,29 @@ public class UserRepo(AppDbContext db) : IUserRepository
         .FirstOrDefaultAsync(s => s.Username == username);
     }
 
-    public async Task<List<User>> GetAllUserAfterCertianDate(DateTime date)
+    public async Task<List<User>> GetAllUserAfterCertianDate(DateTime date, int page, int limit)
     {
         return await _db.Users
         .AsNoTracking()
-        .Where(s => s.CreatedAt >= date)
+        .Where(s =>
+            s.CreatedAt >= date &&
+            s.IsDeleted == false)
         .OrderBy(s => s.CreatedAt)
+        .Skip((page - 1) * limit)
+        .Take(limit)
         .ToListAsync();
     }
 
-    public async Task<List<User>> GetAllUserBeforeCertianDate(DateTime date)
+    public async Task<List<User>> GetAllUserBeforeCertianDate(DateTime date, int page, int limit)
     {
         return await _db.Users
         .AsNoTracking()
-        .Where(s => s.CreatedAt <= date)
+        .Where(s =>
+            s.CreatedAt <= date &&
+            s.IsDeleted == false)
         .OrderBy(s => s.CreatedAt)
+        .Skip((page - 1) * limit)
+        .Take(limit)
         .ToListAsync();
     }
 
@@ -58,6 +69,23 @@ public class UserRepo(AppDbContext db) : IUserRepository
         return await _db.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id);
+    }
+
+
+    public async Task<int> GetTotalUserCount()
+    {
+        return await _db.Users.AsNoTracking().CountAsync(s => s.IsDeleted == false);
+    }
+
+
+    public async Task<int> GetTotalUserCountAfterDate(DateTime date)
+    {
+        return await _db.Users.AsNoTracking().CountAsync(s => s.IsDeleted == false && s.CreatedAt >= date);
+    }
+
+    public async Task<int> GetTotalUserCountBeforeDate(DateTime date)
+    {
+        return await _db.Users.AsNoTracking().CountAsync(s => s.IsDeleted == false && s.CreatedAt <= date);
     }
 
 
