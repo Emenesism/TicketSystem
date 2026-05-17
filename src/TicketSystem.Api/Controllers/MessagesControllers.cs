@@ -38,7 +38,8 @@ public class MessageController(ITicketMessageRepository messageRepository, IFile
             SenderId = message.SenderId,
             TicketId = message.TicketId,
             Content = message.Content,
-            CreatedAt = message.CreatedAt
+            CreatedAt = message.CreatedAt,
+            Attachments = []
         });
     }
 
@@ -167,7 +168,15 @@ public class MessageController(ITicketMessageRepository messageRepository, IFile
             Id = s.Id,
             SenderId = s.SenderId,
             CreatedAt = s.CreatedAt,
-            TicketId = s.TicketId
+            TicketId = s.TicketId,
+            Attachments = s.Attachments.Select(a => new FileResponse
+            {
+                Id = a.Id,
+                Filename = a.Filename,
+                ContentType = a.ContentType,
+                Size = a.Size,
+                CreatedAt = a.CreatedAt
+            }).ToList()
         }).ToList();
 
         return Ok(result);
