@@ -21,6 +21,7 @@ public class TicketMessageRepo(AppDbContext db) : ITicketMessageRepository
     {
         return await _db.TicketMessages
         .AsNoTracking()
+        .Include(s => s.Attachments)
         .Where(s => s.TicketId == ticketId)
         .OrderBy(s => s.CreatedAt)
         .ToListAsync();
