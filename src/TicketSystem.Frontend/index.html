@@ -563,6 +563,59 @@
                 animation: spin 1s linear infinite;
                 margin: 0 auto 15px;
             }
+            .pagination {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 25px;
+                background: rgba(0, 0, 0, 0.15);
+                border-top: 1px solid var(--glass-border);
+            }
+            .pagination-info {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+            }
+            .pagination-controls {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .pagination-btn {
+                padding: 8px 14px;
+                border-radius: 8px;
+                border: 1px solid var(--glass-border);
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--text);
+                cursor: pointer;
+                font-size: 0.85rem;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            .pagination-btn:hover:not(:disabled) {
+                background: var(--primary);
+                border-color: var(--primary);
+            }
+            .pagination-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            .pagination-btn.active {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: white;
+            }
+            .pagination-limit {
+                padding: 6px 10px;
+                border-radius: 8px;
+                border: 1px solid var(--glass-border);
+                background: rgba(15, 23, 42, 0.5);
+                color: var(--text);
+                font-size: 0.85rem;
+                outline: none;
+            }
+            .pagination-limit:focus {
+                border-color: var(--primary);
+            }
             .alert {
                 padding: 15px 20px;
                 border-radius: 12px;
@@ -1359,6 +1412,20 @@
                             <div class="empty-state-icon">👥</div>
                             <h3>No users found</h3>
                         </div>
+                        <div id="paginationContainer" class="pagination" style="display: none">
+                            <div class="pagination-info" id="paginationInfo">Showing 0 of 0</div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" id="prevPageBtn" onclick="goToPage(currentPage - 1)">Prev</button>
+                                <span id="pageButtons"></span>
+                                <button class="pagination-btn" id="nextPageBtn" onclick="goToPage(currentPage + 1)">Next</button>
+                                <select class="pagination-limit" id="limitSelect" onchange="changeLimit(this.value)">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1790,15 +1857,27 @@
                 }
             }
 
-            function renderUsers(users) {
+            // Pagination State
+            let currentPage = 1;
+            let currentLimit = 10;
+            let currentFilterType = 'all';
+            let currentFilterDate = null;
+
+            function renderUsers(data) {
                 tableBody.innerHTML = "";
-                if (!users || users.length === 0) {
+                const items = data.items || data;
+                const totalCount = data.totalCount || items.length;
+                const totalPages = data.totalPages || 1;
+
+                if (!items || items.length === 0) {
                     emptyState.style.display = "block";
+                    const pc = document.getElementById('paginationContainer');
+                    if (pc) pc.style.display = 'none';
                     return;
                 }
                 emptyState.style.display = "none";
 
-                users.forEach((user) => {
+                items.forEach((user) => {
                     const tr = document.createElement("tr");
                     const name = user.name || user.Name || "Unknown";
                     const username =
@@ -1822,32 +1901,101 @@
                 `;
                     tableBody.appendChild(tr);
                 });
+
+                renderPagination(totalCount, totalPages);
             }
 
-            async function fetchApi(endpoint) {
+            function renderPagination(totalCount, totalPages) {
+                const container = document.getElementById('paginationContainer');
+                const info = document.getElementById('paginationInfo');
+                const pageButtons = document.getElementById('pageButtons');
+                const prevBtn = document.getElementById('prevPageBtn');
+                const nextBtn = document.getElementById('nextPageBtn');
+                const limitSelect = document.getElementById('limitSelect');
+                if (!container) return;
+
+                container.style.display = 'flex';
+                if (limitSelect) limitSelect.value = currentLimit;
+
+                const start = (currentPage - 1) * currentLimit + 1;
+                const end = Math.min(currentPage * currentLimit, totalCount);
+                info.textContent = `Showing ${start}-${end} of ${totalCount}`;
+
+                if (prevBtn) prevBtn.disabled = currentPage <= 1;
+                if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+                if (pageButtons) {
+                    pageButtons.innerHTML = '';
+                    const maxVisible = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                    if (endPage - startPage < maxVisible - 1) {
+                        startPage = Math.max(1, endPage - maxVisible + 1);
+                    }
+
+                    if (startPage > 1) {
+                        pageButtons.innerHTML += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
+                        if (startPage > 2) pageButtons.innerHTML += `<span style="color: var(--text-muted); padding: 0 4px;">...</span>`;
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        pageButtons.innerHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                    }
+
+                    if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) pageButtons.innerHTML += `<span style="color: var(--text-muted); padding: 0 4px;">...</span>`;
+                        pageButtons.innerHTML += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+                    }
+                }
+            }
+
+            function goToPage(page) {
+                currentPage = page;
+                loadUsers();
+            }
+
+            function changeLimit(limit) {
+                currentLimit = parseInt(limit);
+                currentPage = 1;
+                loadUsers();
+            }
+
+            async function loadUsers() {
                 showTableLoading(true);
+                let endpoint;
+
+                if (currentFilterType === 'before' && currentFilterDate) {
+                    endpoint = `/users/before-date?date=${encodeURIComponent(currentFilterDate)}&page=${currentPage}&limit=${currentLimit}`;
+                } else if (currentFilterType === 'after' && currentFilterDate) {
+                    endpoint = `/users/after-date?date=${encodeURIComponent(currentFilterDate)}&page=${currentPage}&limit=${currentLimit}`;
+                } else {
+                    endpoint = `/users/all?page=${currentPage}&limit=${currentLimit}`;
+                }
+
                 try {
                     const response = await apiRequest(endpoint, {
                         method: "GET",
                         headers: { "Content-Type": "application/json" },
                     });
-
                     const data = await response.json();
                     if (!response.ok)
                         throw new Error(
                             data.message || `Error: ${response.status}`,
                         );
-                    renderUsers(Array.isArray(data) ? data : [data]);
+                    renderUsers(data);
                 } catch (err) {
                     showAdminError(err.message);
-                    renderUsers([]);
+                    renderUsers({ items: [], totalCount: 0, totalPages: 1 });
                 } finally {
                     showTableLoading(false);
                 }
             }
 
             async function fetchAllUsers() {
-                await fetchApi("/users/all");
+                currentFilterType = 'all';
+                currentFilterDate = null;
+                currentPage = 1;
+                await loadUsers();
             }
 
             async function applyFilters() {
@@ -1858,23 +2006,27 @@
                 const bDate = document.getElementById("filterBeforeDate").value;
                 const aDate = document.getElementById("filterAfterDate").value;
 
-                if (name)
+                currentPage = 1;
+
+                if (name) {
                     await fetchApi(
                         `/users/by-name?name=${encodeURIComponent(name)}`,
                     );
-                else if (username)
+                } else if (username) {
                     await fetchApi(
                         `/users/by-username?username=${encodeURIComponent(username)}`,
                     );
-                else if (bDate)
-                    await fetchApi(
-                        `/users/before-date?date=${encodeURIComponent(bDate)}`,
-                    );
-                else if (aDate)
-                    await fetchApi(
-                        `/users/after-date?date=${encodeURIComponent(aDate)}`,
-                    );
-                else await fetchAllUsers();
+                } else if (bDate) {
+                    currentFilterType = 'before';
+                    currentFilterDate = bDate + 'T00:00:00';
+                    await loadUsers();
+                } else if (aDate) {
+                    currentFilterType = 'after';
+                    currentFilterDate = aDate + 'T00:00:00';
+                    await loadUsers();
+                } else {
+                    await fetchAllUsers();
+                }
             }
 
             function clearFilters() {

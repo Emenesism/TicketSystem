@@ -366,6 +366,69 @@
             }
         }
 
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 25px;
+            background: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid var(--border);
+        }
+
+        .pagination-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pagination-btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .pagination-limit {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.5);
+            color: var(--text);
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .pagination-limit:focus {
+            border-color: var(--primary);
+        }
+
         /* Error Message */
         .alert {
             padding: 15px 20px;
@@ -892,6 +955,22 @@
                     <div class="empty-state-icon">👥</div>
                     <h3>No users found</h3>
                 </div>
+                <div id="paginationContainer" class="pagination" style="display: none">
+                    <div class="pagination-info" id="paginationInfo">
+                        Showing 0 of 0
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" id="prevPageBtn" onclick="goToPage(currentPage - 1)">Prev</button>
+                        <span id="pageButtons"></span>
+                        <button class="pagination-btn" id="nextPageBtn" onclick="goToPage(currentPage + 1)">Next</button>
+                        <select class="pagination-limit" id="limitSelect" onchange="changeLimit(this.value)">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1249,25 +1328,58 @@
             return response;
         }
 
+        // Pagination State
+        let currentPage = 1;
+        let currentLimit = 10;
+        let currentFilterType = 'all'; // 'all', 'before', 'after'
+        let currentFilterDate = null;
+
         // Users Implementation
         async function fetchAllUsers() {
+            currentFilterType = 'all';
+            currentFilterDate = null;
+            currentPage = 1;
+            await loadUsers();
+        }
+
+        async function loadUsers() {
             showLoading(true);
-            const res = await apiRequest('/users/all');
+            let endpoint;
+
+            if (currentFilterType === 'before' && currentFilterDate) {
+                endpoint = `/users/before-date?date=${encodeURIComponent(currentFilterDate)}&page=${currentPage}&limit=${currentLimit}`;
+            } else if (currentFilterType === 'after' && currentFilterDate) {
+                endpoint = `/users/after-date?date=${encodeURIComponent(currentFilterDate)}&page=${currentPage}&limit=${currentLimit}`;
+            } else {
+                endpoint = `/users/all?page=${currentPage}&limit=${currentLimit}`;
+            }
+
+            const res = await apiRequest(endpoint);
             if (res && res.ok) {
-                const users = await res.json();
-                renderUsers(Array.isArray(users) ? users : [users]);
+                const data = await res.json();
+                renderUsers(data);
             }
             showLoading(false);
         }
 
-        function renderUsers(users) {
+        function renderUsers(data) {
             const tableBody = document.getElementById('usersTableBody');
             const emptyState = document.getElementById('emptyState');
+            const paginationContainer = document.getElementById('paginationContainer');
             tableBody.innerHTML = '';
-            if (!users || users.length === 0) { emptyState.style.display = 'block'; return; }
+
+            const items = data.items || data;
+            const totalCount = data.totalCount || items.length;
+            const totalPages = data.totalPages || 1;
+
+            if (!items || items.length === 0) {
+                emptyState.style.display = 'block';
+                paginationContainer.style.display = 'none';
+                return;
+            }
             emptyState.style.display = 'none';
 
-            users.forEach(user => {
+            items.forEach(user => {
                 const tr = document.createElement('tr');
                 const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
                 const date = new Date(user.createdAt).toLocaleDateString();
@@ -1279,6 +1391,90 @@
                 `;
                 tableBody.appendChild(tr);
             });
+
+            renderPagination(totalCount, totalPages);
+        }
+
+        function renderPagination(totalCount, totalPages) {
+            const container = document.getElementById('paginationContainer');
+            const info = document.getElementById('paginationInfo');
+            const pageButtons = document.getElementById('pageButtons');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const limitSelect = document.getElementById('limitSelect');
+
+            container.style.display = 'flex';
+            limitSelect.value = currentLimit;
+
+            const start = (currentPage - 1) * currentLimit + 1;
+            const end = Math.min(currentPage * currentLimit, totalCount);
+            info.textContent = `Showing ${start}-${end} of ${totalCount}`;
+
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+
+            pageButtons.innerHTML = '';
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            if (startPage > 1) {
+                pageButtons.innerHTML += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) pageButtons.innerHTML += `<span style="color: var(--text-muted); padding: 0 4px;">...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pageButtons.innerHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) pageButtons.innerHTML += `<span style="color: var(--text-muted); padding: 0 4px;">...</span>`;
+                pageButtons.innerHTML += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadUsers();
+        }
+
+        function changeLimit(limit) {
+            currentLimit = parseInt(limit);
+            currentPage = 1;
+            loadUsers();
+        }
+
+        function applyFilters() {
+            const name = document.getElementById('filterName').value.trim();
+            const username = document.getElementById('filterUsername').value.trim();
+            const beforeDate = document.getElementById('filterBeforeDate').value;
+            const afterDate = document.getElementById('filterAfterDate').value;
+
+            currentPage = 1;
+
+            if (beforeDate) {
+                currentFilterType = 'before';
+                currentFilterDate = beforeDate + 'T00:00:00';
+            } else if (afterDate) {
+                currentFilterType = 'after';
+                currentFilterDate = afterDate + 'T00:00:00';
+            } else {
+                currentFilterType = 'all';
+                currentFilterDate = null;
+            }
+
+            loadUsers();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterName').value = '';
+            document.getElementById('filterUsername').value = '';
+            document.getElementById('filterBeforeDate').value = '';
+            document.getElementById('filterAfterDate').value = '';
+            fetchAllUsers();
         }
 
         // Tickets Implementation
