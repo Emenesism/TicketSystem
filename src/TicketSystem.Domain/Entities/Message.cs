@@ -15,4 +15,6 @@ public class TicketMessage(string content, Guid senderId, Guid ticketId)
 
     // Navigation
     public Ticket Ticket { get; set; } = null!;
+
+    public ICollection<Attachment> Attachments { get; set; } = [];
 }
