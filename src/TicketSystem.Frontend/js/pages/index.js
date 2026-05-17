@@ -2,7 +2,7 @@ import { getApiBaseUrl, setApiBaseUrl, getToken, setToken, setUserId, setRole, s
 import { apiRequest, logout, logoutAll } from '../core/api.js';
 import { openModal, closeModal, showError, showLoading, formatDate, formatDateTime, getInitial, getValue } from '../core/utils.js';
 import { renderUsers, fetchAllUsers, loadUsers, applyFilters, clearFilters, goToPage, changeLimit, getCurrentPage, setCurrentPage, getCurrentLimit, setCurrentLimit } from '../modules/users.js';
-import { renderTickets, loadUnassignedTickets, loadMyTickets, loadUserTickets, openTicketDetail, loadMessages, sendMessage, deleteMessage, assignTicketToMe, solveTicket, submitTicket, getCurrentTicketId, setCurrentTicketId } from '../modules/tickets.js';
+import { renderTickets, loadUnassignedTickets, loadMyTickets, loadUserTickets, openTicketDetail, loadMessages, sendMessage, deleteMessage, assignTicketToMe, solveTicket, submitTicket, getCurrentTicketId, setCurrentTicketId, handleMessageFileSelected, clearSelectedMessageFile, downloadAttachment, deleteAttachment as deleteFileAttachment } from '../modules/tickets.js';
 import { fetchAllAdmins, submitCreateAdmin, openCreateAdminModal, syncSuperAdminCheckbox } from '../modules/admins.js';
 import { fetchAllSessions } from '../modules/sessions.js';
 import { setAdminTab, showSuperAdminNavigation } from '../components/layout.js';
@@ -176,8 +176,12 @@ const loadMy = () => loadMyTickets('admin', onLogout, showErr, (tickets, u) => r
 window.loadUnassignedTickets = loadUnassigned;
 window.loadMyTickets = loadMy;
 window.openTicketDetail = (t, u) => openTicketDetail(t, u, currentRole, currentUserId, onLogout, true);
-window.sendMessage = () => sendMessage('admin', onLogout, (r, o) => loadMessages(r, o));
-window.deleteMessage = (id) => deleteMessage(id, 'admin', onLogout, (r, o) => loadMessages(r, o));
+window.sendMessage = () => sendMessage(currentRole, onLogout, (r, o) => loadMessages(r, o));
+window.deleteMessage = (id) => deleteMessage(id, currentRole, onLogout, (r, o) => loadMessages(r, o));
+window.handleMessageFileSelected = handleMessageFileSelected;
+window.clearSelectedMessageFile = clearSelectedMessageFile;
+window.downloadAttachment = (id, filename) => downloadAttachment(id, filename, currentRole, onLogout);
+window.deleteAttachment = (id) => deleteFileAttachment(id, currentRole, onLogout, (r, o) => loadMessages(r, o));
 window.assignTicketToMe = () => assignTicketToMe('admin', onLogout, loadUnassigned, closeModal);
 window.solveTicket = () => solveTicket('admin', onLogout, loadMy, closeModal);
 
